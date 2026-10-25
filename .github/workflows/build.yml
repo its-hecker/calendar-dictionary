@@ -75,6 +75,10 @@ jobs:
       - name: Build APK and run Android lint
         run: ./gradlew :app:assembleDebug :app:lintDebug --no-daemon --stacktrace --console=plain
 
+      - name: Verify packaged dictionary APK
+        if: env.APP_BRANCH == 'dictionary'
+        run: python3 tools/verify_apk.py app/build/outputs/apk/debug/app-debug.apk
+
       - name: Prepare download
         shell: bash
         run: |
