@@ -1,23 +1,23 @@
-# Calendar & Dictionary
+# SabCal & Urdu–English Dictionary
 
-Two independent Android apps, each maintained on its own branch. Both can be installed on the same phone.
+Two standalone offline Android apps, each on its own branch. Both are developed by **Sabber Kazmi** and can be installed together on Android 10+.
 
-| App | Source branch | Application ID | APK |
+| App | Branch | APK | App ID |
 | --- | --- | --- | --- |
-| Teen Taqwim | [calendar](https://github.com/its-hecker/calendar-dictionary/tree/calendar) | `com.sabber.taqwim` | `Teen-Taqwim.apk` |
-| Urdu ⇄ English Dictionary | [dictionary](https://github.com/its-hecker/calendar-dictionary/tree/dictionary) | `com.sabber.urdudictionary` | `Urdu-Dictionary.apk` |
+| SabCal 2.0 | [calendar](https://github.com/its-hecker/calendar-dictionary/tree/calendar) | `SabCal.apk` | `com.sabber.taqwim` |
+| Urdu & English Dictionary 2.0 | [dictionary](https://github.com/its-hecker/calendar-dictionary/tree/dictionary) | `Urdu-Dictionary.apk` | `com.sabber.urdudictionary` |
 
-The supplied calendar page and dictionary design, content, search, saved words, themes and calculations are preserved. The dictionary contains the 22 words in the supplied file; its Android adapter connects the existing microphone and speaker buttons to Android speech services.
+**SabCal** has a redesigned light/dark interface, selectable Gregorian/Hijri/Desi dates, a date picker, month navigation, occasions, adjustments and subtle motion. The previous Teen Taqwim launcher name is replaced by SabCal; its app ID remains compatible with existing data.
 
-## Download
+**Dictionary** contains **230,702 headwords / 407,041 definitions**: **9,205 Urdu entries with English meanings** and **221,497 English headwords with English definitions**. Entries without Urdu translations are clearly labelled. It includes an indexed offline database, Urdu font, search filters, word details/examples, saved words, history, voice buttons and source credits. The compressed dictionary is bundled in the APK and unpacked locally; it never requires a data download.
 
-Open [Releases](https://github.com/its-hecker/calendar-dictionary/releases) and download the APK for the desired app. The builds are marked as test prereleases. Android 10 or newer is required.
+Both apps include an info button, **Developed by Sabber Kazmi**, and the [Telegram channel](https://t.me/pixel4seriesupdates). Light, dark, system appearance and reduced-motion preferences are supported.
 
-Each push to `calendar` or `dictionary` builds only that app, runs Android lint, uploads an APK artifact and publishes a test APK release with a SHA-256 checksum. Builds compile the committed source instead of regenerating and overwriting it.
+## Downloads and builds
 
-To start a build manually, open [Build Android APK](https://github.com/its-hecker/calendar-dictionary/actions/workflows/build.yml), select **Run workflow**, keep the workflow branch as `main`, and choose `calendar` or `dictionary` in **App branch to build**.
+Download installable test APKs from [Releases](https://github.com/its-hecker/calendar-dictionary/releases). Pushes to an app branch compile only that app, validate source/data, run Android lint and publish a test prerelease with a checksum. Sources are compiled directly and never regenerated over your changes.
 
-## Build locally
+To build manually, open [Build Android APK](https://github.com/its-hecker/calendar-dictionary/actions/workflows/build.yml), run the workflow on `main` and select `calendar` or `dictionary`.
 
 ```sh
 git clone --branch calendar https://github.com/its-hecker/calendar-dictionary.git
@@ -25,12 +25,6 @@ cd calendar-dictionary
 ./gradlew :app:assembleDebug :app:lintDebug
 ```
 
-Use `--branch dictionary` for the dictionary. Java 17 and Android SDK platform 35/build tools 34.0.0 are required. The Gradle 8.9 wrapper is included with a distribution checksum. APK output: `app/build/outputs/apk/debug/app-debug.apk`.
+Use `--branch dictionary` for the dictionary. Java 17 and Android SDK platform 35/build tools 34.0.0 are required; Gradle 8.9 is included through the wrapper. Detailed features, data sources/licenses, storage requirements and rebuild instructions are documented on each branch.
 
-## Offline behavior
-
-All page assets, calendar calculations and dictionary entries are packaged in each APK. No server is required. Saved words and calendar preferences stay in each app's own local storage.
-
-Dictionary pronunciation uses installed text-to-speech voices, preferring an offline voice. When no Urdu voice is available, the supplied Roman/Hindi fallback is retained if that voice is installed. Voice search uses the phone's speech recognition app and may require internet access or downloaded language packs. The dictionary itself requests neither internet nor microphone permission; the recognition provider handles its microphone permission.
-
-These APKs use Android's development signing configuration, matching the supplied workflow. Fresh CI runners may generate different signing certificates; an update can then require uninstalling the previous test build, which removes its saved words/preferences. Use a consistent private signing key before distributing updateable production releases.
+APKs are development-signed test builds. A different CI signing certificate can require uninstalling an older test build, which removes its local data. Use a consistent private key for production updates.
