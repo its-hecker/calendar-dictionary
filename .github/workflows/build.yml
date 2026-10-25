@@ -65,6 +65,10 @@ jobs:
         if: env.APP_BRANCH == 'dictionary'
         run: python3 tools/verify_lexicon.py
 
+      - name: Verify calendar occasions and theme contrast
+        if: env.APP_BRANCH == 'calendar'
+        run: node --test tests/calendar-data.test.cjs
+
       - name: Check page JavaScript
         run: node --check app/src/main/assets/app.js
 
@@ -83,7 +87,7 @@ jobs:
           Source commit: $SOURCE_SHA
 
           Android 10 or newer. Install $APK_NAME; the other app is installed separately.
-          Version 2.0 with redesigned UI, developer info and Telegram channel.
+          Updated interface, developer info and Telegram channel.
           This is a debug-signed test APK. All dictionary/calendar content is bundled offline.
           Dictionary speech depends on installed Android voices and a speech recognition provider.
           EOF
