@@ -1,13 +1,13 @@
-# SabCal & Urdu–English Dictionary
+# Calendar & Urdu–English Dictionary
 
 Two standalone offline Android apps, each on its own branch. Both are developed by **Sabber Kazmi** and can be installed together on Android 10+.
 
 | App | Branch | APK | App ID |
 | --- | --- | --- | --- |
-| SabCal 2.2 | [calendar](https://github.com/its-hecker/calendar-dictionary/tree/calendar) | `SabCal.apk` | `com.sabber.taqwim` |
+| Calendar 2.3 | [calendar](https://github.com/its-hecker/calendar-dictionary/tree/calendar) | `Calendar.apk` | `com.sabber.taqwim` |
 | Urdu & English Dictionary 2.1 | [dictionary](https://github.com/its-hecker/calendar-dictionary/tree/dictionary) | `Urdu-Dictionary.apk` | `com.sabber.urdudictionary` |
 
-**SabCal** has a redesigned light/dark interface, Monday-first weeks, a bold persistent highlight for today, green Wiladat/Eid and red Shahadat markers, selectable Gregorian/Hijri/Desi dates, a date picker, month navigation, event/profile sheets, both Fatimiyya accounts, adjustable text size, six color palettes plus a custom accent, adjustments and subtle motion. The previous Teen Taqwim launcher name is replaced by SabCal; its app ID remains compatible with existing data.
+**Calendar** has a blue/white adaptive launcher icon and a redesigned light/dark interface, Monday-first weeks, a bold persistent highlight for today, green Wiladat/Eid and red Shahadat markers, selectable Gregorian/Hijri/Desi dates, a date picker, month navigation, event/profile sheets, both Fatimiyya accounts, adjustable text size, six color palettes plus a custom accent, adjustments and subtle motion. The previous Teen Taqwim launcher name is replaced by Calendar; its app ID remains compatible with existing data.
 
 **Dictionary** contains **230,702 headwords / 407,041 definitions**: **9,205 Urdu entries with English meanings** and **221,497 English headwords with English definitions**. Entries without Urdu translations are clearly labelled. It includes an indexed offline database, Urdu font, search filters, word details, 4,609 paired Urdu–English example sentences covering 11,983 headwords, saved words, history, voice buttons and source credits. Example coverage varies by word. The compressed dictionary is bundled in the APK and unpacked locally; it never requires a data download.
 
