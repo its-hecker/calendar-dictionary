@@ -8,6 +8,8 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.WindowInsets;
+import android.view.View;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -18,6 +20,7 @@ import android.widget.FrameLayout;
 public class OfflineActivity extends Activity {
     protected static final String PAGE_URL = "file:///android_asset/index.html";
     protected WebView web;
+    private android.window.OnBackInvokedCallback backCallback;
 
     @Override
     protected void onCreate(Bundle state) {
@@ -69,11 +72,54 @@ public class OfflineActivity extends Activity {
                 return true;
             }
         });
+        web.addJavascriptInterface(new ThemeBridge(root), "AppTheme");
         configureWebView(web);
         web.loadUrl(PAGE_URL);
+        if (Build.VERSION.SDK_INT >= 33) {
+            backCallback = this::requestBack;
+            getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                    android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT, backCallback);
+        }
     }
 
     protected void configureWebView(WebView view) { }
+
+    private void requestBack() {
+        if (web == null) { finish(); return; }
+        web.evaluateJavascript("window.AppUi ? AppUi.back() : false", handled -> {
+            if (!"true".equals(handled)) finish();
+        });
+    }
+
+    @Override
+    public void onBackPressed() { requestBack(); }
+
+    public final class ThemeBridge {
+        private final View root;
+        ThemeBridge(View root) { this.root = root; }
+
+        @JavascriptInterface
+        public void setDark(boolean dark) {
+            runOnUiThread(() -> {
+                if (isDestroyed() || web == null) return;
+                int color = getColor(getResources().getIdentifier(
+                        dark ? "page_dark" : "page_light", "color", getPackageName()));
+                root.setBackgroundColor(color);
+                web.setBackgroundColor(color);
+                if (Build.VERSION.SDK_INT >= 30) {
+                    android.view.WindowInsetsController controller = getWindow().getInsetsController();
+                    int mask = android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+                            | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS;
+                    if (controller != null) controller.setSystemBarsAppearance(dark ? 0 : mask, mask);
+                } else {
+                    View decor = getWindow().getDecorView();
+                    int mask = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+                    decor.setSystemUiVisibility(dark ? decor.getSystemUiVisibility() & ~mask
+                            : decor.getSystemUiVisibility() | mask);
+                }
+            });
+        }
+    }
 
     protected void evaluatePage(String script) {
         runOnUiThread(() -> {
@@ -97,7 +143,11 @@ public class OfflineActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        if (Build.VERSION.SDK_INT >= 33 && backCallback != null) {
+            getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback(backCallback);
+        }
         if (web != null) {
+            web.removeJavascriptInterface("AppTheme");
             web.removeJavascriptInterface("AndroidVoice");
             web.stopLoading();
             ((FrameLayout) web.getParent()).removeView(web);

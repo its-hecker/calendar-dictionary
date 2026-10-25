@@ -28,7 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
         with:
-          ref: ${{ env.APP_BRANCH }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.app || github.sha }}
           persist-credentials: false
 
       - name: Select app
@@ -36,8 +36,8 @@ jobs:
         run: |
           case "$APP_BRANCH" in
             calendar)
-              echo "APP_NAME=Teen Taqwim" >> "$GITHUB_ENV"
-              echo "APK_NAME=Teen-Taqwim.apk" >> "$GITHUB_ENV"
+              echo "APP_NAME=SabCal" >> "$GITHUB_ENV"
+              echo "APK_NAME=SabCal.apk" >> "$GITHUB_ENV"
               ;;
             dictionary)
               echo "APP_NAME=Urdu Dictionary" >> "$GITHUB_ENV"
@@ -61,6 +61,13 @@ jobs:
           packages: 'platforms;android-35 build-tools;34.0.0'
           log-accepted-android-sdk-licenses: false
 
+      - name: Verify offline dictionary assets
+        if: env.APP_BRANCH == 'dictionary'
+        run: python3 tools/verify_lexicon.py
+
+      - name: Check page JavaScript
+        run: node --check app/src/main/assets/app.js
+
       - name: Build APK and run Android lint
         run: ./gradlew :app:assembleDebug :app:lintDebug --no-daemon --stacktrace --console=plain
 
@@ -76,7 +83,8 @@ jobs:
           Source commit: $SOURCE_SHA
 
           Android 10 or newer. Install $APK_NAME; the other app is installed separately.
-          This is a debug-signed test APK. Core calendar/dictionary content is bundled offline.
+          Version 2.0 with redesigned UI, developer info and Telegram channel.
+          This is a debug-signed test APK. All dictionary/calendar content is bundled offline.
           Dictionary speech depends on installed Android voices and a speech recognition provider.
           EOF
 

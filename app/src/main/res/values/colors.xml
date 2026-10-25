@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="bg">#EEF1F6</color>
-    <color name="ic_bg">#1F3A8A</color>
+    <color name="bg">#F7F6F1</color>
+    <color name="page_light">#F7F6F1</color>
+    <color name="page_dark">#111D18</color>
+    <color name="ic_bg">#245F48</color>
 </resources>

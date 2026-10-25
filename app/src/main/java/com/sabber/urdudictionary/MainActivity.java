@@ -26,6 +26,7 @@ public class MainActivity extends OfflineActivity {
     private boolean ttsFailed;
     private boolean recognizing;
     private String[] pendingSpeech;
+    private DictionaryStore dictionary;
 
     @Override
     protected void onCreate(Bundle state) {
@@ -52,6 +53,8 @@ public class MainActivity extends OfflineActivity {
     @Override
     protected void configureWebView(WebView view) {
         view.addJavascriptInterface(new VoiceBridge(), "AndroidVoice");
+        dictionary = new DictionaryStore(this, this::evaluatePage);
+        view.addJavascriptInterface(dictionary, "DictionaryApi");
     }
 
     private void message(String text) {
@@ -145,6 +148,8 @@ public class MainActivity extends OfflineActivity {
 
     @Override
     protected void onDestroy() {
+        if (web != null) web.removeJavascriptInterface("DictionaryApi");
+        if (dictionary != null) dictionary.close();
         pendingSpeech = null;
         if (tts != null) {
             tts.stop();

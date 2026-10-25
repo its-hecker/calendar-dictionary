@@ -6,3 +6,8 @@ local.properties
 *.jks
 *.keystore
 dist/
+
+__pycache__/
+*.pyc
+app/src/main/assets/data/lexicon.db
+app/src/main/assets/data/lexicon.db.gz

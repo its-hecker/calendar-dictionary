@@ -1,0 +1,25 @@
+Dictionary data credits
+
+Urdu entries: Wiktionary contributors, via Kaikki / Wiktextract.
+https://en.wiktionary.org/ and https://kaikki.org/dictionary/Urdu/
+CC BY-SA 4.0: https://creativecommons.org/licenses/by-sa/4.0/
+Changes: grouped headwords/senses; normalized search keys; retained meanings, examples,
+romanizations and inflected-form lookups; merged the original 22 supplied entries.
+Each Urdu detail view links to the original Wiktionary page, including contributor history.
+The adapted Wiktionary data remains available under CC BY-SA 4.0.
+Snapshot retrieved 25 October 2026; Kaikki extraction dated 21 October 2026.
+
+English definitions: CloudBytes-Academy / English-Dictionary-Open-Source, v2,
+https://github.com/CloudBytes-Academy/English-Dictionary-Open-Source
+Open English WordNet 2025+ (CC BY 4.0 with WordNet notice), and
+Webster's 1913 via OPTED / Project Gutenberg (public domain USA).
+Full original attribution and conditions are reproduced in ENGLISH-DATA.md.
+Changes: grouped headwords case-insensitively, indexed entries, kept every meaning
+and example, and preferred contemporary definitions for previews.
+
+The original 22 entries were supplied with this project.
+No machine-generated translations were added to increase the count.
+
+Build tools/build_lexicon.py --export-jsonl export.jsonl to obtain an unencoded,
+plain-text copy at no charge. Source JSONL data is freely downloadable at the URLs
+listed in that script. Dataset licenses do not imply a license for unrelated app code.
