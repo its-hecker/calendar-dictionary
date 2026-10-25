@@ -12,5 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "Taqwim"
+rootProject.name = "SabCal"
 include(":app")

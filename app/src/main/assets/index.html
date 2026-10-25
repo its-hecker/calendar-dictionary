@@ -1,120 +1,28 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Teen Taqwim · Calendar</title>
-<style>
-:root{--bg:#faf8f3;--card:#fff;--fg:#1d1b16;--mute:#7a756a;--line:#e6e1d5;--acc:#0f6b4f;--hij:#0f6b4f;--des:#b4571b;--today:#0f6b4f;--ev:#9b1c31;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14130f;--card:#1e1c17;--fg:#f0ece2;--mute:#9a9486;--line:#332f27;--acc:#4fc79f;--hij:#4fc79f;--des:#f0a06a;--today:#4fc79f;--ev:#ff8a9c;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#14130f;--card:#1e1c17;--fg:#f0ece2;--mute:#9a9486;--line:#332f27;--acc:#4fc79f;--hij:#4fc79f;--des:#f0a06a;--today:#4fc79f;--ev:#ff8a9c;color-scheme:dark}
-*{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-.wrap{max-width:560px;margin:0 auto;padding:12px}
-.top{display:flex;align-items:center;justify-content:space-between;gap:8px}
-button{font:inherit;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px;cursor:pointer}
-.title{text-align:center;flex:1}
-.title b{font-size:20px;display:block}
-.title span{font-size:12px;color:var(--mute)}
-.title .h{color:var(--hij)}.title .d{color:var(--des)}
-.tdy{margin:12px 0;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center}
-.tdy .e{font-size:15px;color:var(--mute)}
-.tdy .hh{font-size:22px;font-weight:600;color:var(--hij);margin:2px 0}
-.tdy .dd{font-size:17px;color:var(--des)}
-.tdy .ev{margin-top:6px;color:var(--ev);font-size:14px;font-weight:600}
-.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
-.dow{font-size:11px;text-align:center;color:var(--mute);padding:4px 0}
-.c{background:var(--card);border:1px solid var(--line);border-radius:10px;min-height:68px;padding:4px 2px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:space-between;position:relative}
-.c.o{opacity:.35}
-.c .g{font-size:16px;font-weight:600}
-.c .hj{font-size:11px;color:var(--hij)}
-.c .ds{font-size:10px;color:var(--des)}
-.c.t{border:2px solid var(--today)}
-.c.v::after{content:"";position:absolute;top:4px;right:4px;width:6px;height:6px;border-radius:50%;background:var(--ev)}
-.c.fri .g{color:var(--acc)}
-.list{margin-top:12px;font-size:14px}
-.list div{padding:6px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:8px}
-.list i{font-style:normal;color:var(--mute);white-space:nowrap}
-.set{margin-top:14px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;font-size:13px}
-.set label{display:flex;align-items:center;justify-content:space-between;padding:4px 0}
-.set small{color:var(--mute);display:block;margin-top:4px}
-.set button{padding:4px 10px}
-</style>
-</head>
-<body>
-<div class="wrap">
-  <div class="top">
-    <button id="prev" aria-label="Previous month">‹</button>
-    <div class="title"><b id="mt"></b><span id="ms"></span></div>
-    <button id="next" aria-label="Next month">›</button>
-  </div>
-  <div class="tdy" id="tdy"></div>
-  <div class="grid" id="grid"></div>
-  <div class="list" id="list"></div>
-  <div style="text-align:center;margin-top:12px"><button id="go">Today</button> <button id="th">Theme</button></div>
-  <div class="set">
-    <label>Hijri day adjust (moon sighting)
-      <span><button id="hm">−</button> <b id="hv">0</b> <button id="hp">+</button></span></label>
-    <label>Desi month start adjust
-      <span><button id="dm">−</button> <b id="dv">0</b> <button id="dp">+</button></span></label>
-    <small>Hijri dates follow the tabular calendar; adjust ±1–2 days to match the local sighting. Desi months start on approximate dates and may differ by a day.</small>
-  </div>
-</div>
-<script>
-var HM=["Muharram","Safar","Rabi ul Awwal","Rabi ul Sani","Jamadi ul Awwal","Jamadi ul Sani","Rajab","Shaban","Ramzan","Shawwal","Zil Qad","Zil Hijja"];
-// Desi (Bikrami) months: [name, startMonth(0-11), startDay]
-var DM=[["Magh",0,14],["Phagun",1,13],["Chet",2,14],["Vaisakh",3,14],["Jeth",4,15],["Harh",5,15],["Sawan",6,16],["Bhadon",7,16],["Assu",8,16],["Katak",9,16],["Maghar",10,15],["Poh",11,15]];
-var EV={"1-1":"Islamic New Year","1-10":"Ashura","2-20":"Arbaeen","2-28":"Wafat of the Prophet ﷺ & Imam Hasan (a)","3-8":"Shahadat Imam Hasan Askari (a)","3-17":"Milad of the Prophet ﷺ","7-13":"Wiladat Imam Ali (a)","7-27":"Eid Mab’ath","8-15":"Wiladat Imam Mahdi (a.t.f.s)","9-19":"Zarbat Imam Ali (a)","9-21":"Shahadat Imam Ali (a)","10-1":"Eid ul Fitr","12-10":"Eid ul Adha","12-18":"Eid Ghadeer","6-3":"Shahadat Bibi Fatima (s.a)"};
-var DOW=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-var S={h:0,d:0,theme:""};
-try{var x=JSON.parse(localStorage.getItem("tt")||"{}");S.h=x.h||0;S.d=x.d||0;S.theme=x.theme||""}catch(e){}
-function save(){try{localStorage.setItem("tt",JSON.stringify(S))}catch(e){}}
-function applyTheme(){if(S.theme)document.documentElement.setAttribute("data-theme",S.theme);else document.documentElement.removeAttribute("data-theme")}
-var hf=new Intl.DateTimeFormat("en-u-ca-islamic-civil-nu-latn",{day:"numeric",month:"numeric",year:"numeric"});
-function hijri(dt){var t=new Date(dt.getFullYear(),dt.getMonth(),dt.getDate()+S.h,12);var o={};hf.formatToParts(t).forEach(function(p){if(p.type!=="literal")o[p.type]=parseInt(p.value,10)});return o}
-function desi(dt){var y=dt.getFullYear(),m=dt.getMonth(),d=dt.getDate();var cur=null;
-  for(var i=0;i<12;i++){var mm=DM[i][1],dd=DM[i][2]+S.d;var s=new Date(y,mm,dd);if(s<=new Date(y,m,d))cur=i}
-  var dayStart,i2=cur;
-  if(cur===null){i2=11;dayStart=new Date(y-1,11,DM[11][2]+S.d)}else dayStart=new Date(y,DM[cur][1],DM[cur][2]+S.d);
-  var n=Math.round((new Date(y,m,d)-dayStart)/864e5)+1;
-  var cs=new Date(y,2,DM[2][2]+S.d);var by=new Date(y,m,d)>=cs?y+57:y+56;
-  return {name:DM[i2][0],day:n,year:by}}
-var cur=new Date();cur=new Date(cur.getFullYear(),cur.getMonth(),1);
-var MN=["January","February","March","April","May","June","July","August","September","October","November","December"];
-function same(a,b){return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate()}
-function evOf(h){return EV[h.month+"-"+h.day]||""}
-function render(){
-  var now=new Date(),y=cur.getFullYear(),m=cur.getMonth();
-  var first=new Date(y,m,1),last=new Date(y,m+1,0);
-  var h1=hijri(first),h2=hijri(last),d1=desi(first),d2=desi(last);
-  document.getElementById("mt").textContent=MN[m]+" "+y;
-  var hs=HM[h1.month-1]+(h1.month!==h2.month?" – "+HM[h2.month-1]:"")+" "+h2.year+" AH";
-  var ds=d1.name+(d1.name!==d2.name?" – "+d2.name:"")+" "+d2.year;
-  document.getElementById("ms").innerHTML='<span class="h">'+hs+'</span> · <span class="d">'+ds+'</span>';
-  var th=hijri(now),td=desi(now);
-  document.getElementById("tdy").innerHTML='<div class="e">'+DOW[now.getDay()]+", "+now.getDate()+" "+MN[now.getMonth()]+" "+now.getFullYear()+'</div><div class="hh">'+th.day+" "+HM[th.month-1]+" "+th.year+' AH</div><div class="dd">'+td.day+" "+td.name+" "+td.year+' Bikrami</div>'+(evOf(th)?'<div class="ev">'+evOf(th)+'</div>':"");
-  var g=document.getElementById("grid");g.innerHTML="";
-  DOW.forEach(function(n){var e=document.createElement("div");e.className="dow";e.textContent=n;g.appendChild(e)});
-  var start=new Date(y,m,1-first.getDay());var list=[];
-  for(var i=0;i<42;i++){var dt=new Date(start.getFullYear(),start.getMonth(),start.getDate()+i);
-    if(i>=35&&dt.getMonth()!==m)break;
-    var h=hijri(dt),d=desi(dt),e=document.createElement("div");
-    var inM=dt.getMonth()===m,ev=evOf(h);
-    e.className="c"+(inM?"":" o")+(same(dt,now)?" t":"")+(ev?" v":"")+(dt.getDay()===5?" fri":"");
-    e.innerHTML='<span class="g">'+dt.getDate()+'</span><span class="hj">'+h.day+(h.day===1?" "+HM[h.month-1].slice(0,3):"")+'</span><span class="ds">'+d.day+(d.day===1?" "+d.name:"")+'</span>';
-    g.appendChild(e);
-    if(inM&&ev)list.push('<div><span>'+ev+'</span><i>'+dt.getDate()+" "+MN[m].slice(0,3)+" · "+h.day+" "+HM[h.month-1]+'</i></div>')}
-  document.getElementById("list").innerHTML=list.join("");
-  document.getElementById("hv").textContent=(S.h>0?"+":"")+S.h;
-  document.getElementById("dv").textContent=(S.d>0?"+":"")+S.d}
-document.getElementById("prev").onclick=function(){cur=new Date(cur.getFullYear(),cur.getMonth()-1,1);render()};
-document.getElementById("next").onclick=function(){cur=new Date(cur.getFullYear(),cur.getMonth()+1,1);render()};
-document.getElementById("go").onclick=function(){var n=new Date();cur=new Date(n.getFullYear(),n.getMonth(),1);render()};
-document.getElementById("th").onclick=function(){var dk=document.documentElement.getAttribute("data-theme")==="dark"||(!S.theme&&matchMedia("(prefers-color-scheme:dark)").matches);S.theme=dk?"light":"dark";applyTheme();save()};
-function adj(k,v){S[k]=Math.max(-2,Math.min(2,S[k]+v));save();render()}
-document.getElementById("hm").onclick=function(){adj("h",-1)};document.getElementById("hp").onclick=function(){adj("h",1)};
-document.getElementById("dm").onclick=function(){adj("d",-1)};document.getElementById("dp").onclick=function(){adj("d",1)};
-applyTheme();render();
-</script>
-</body>
-</html>
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="color-scheme" content="light dark"><title>SabCal</title><link rel="stylesheet" href="app.css"></head><body>
+<svg class="symbols" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+<symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="17" rx="3"/><path d="M7 2v6m10-6v6M3 11h18m-14 4h2m4 0h2m-8 3h2"/></symbol>
+<symbol id="i-left" viewBox="0 0 24 24"><path d="m15 5-7 7 7 7"/></symbol>
+<symbol id="i-right" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol>
+<symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+<symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v.5"/></symbol>
+<symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 1v2m0 18v2M1 12h2m18 0h2M4.2 4.2l1.5 1.5m12.6 12.6 1.5 1.5M4.2 19.8l1.5-1.5M18.3 5.7l1.5-1.5"/></symbol>
+<symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.7 13.3A9 9 0 0 1 10.7 3.3a9 9 0 1 0 10 10Z"/></symbol>
+<symbol id="i-leaf" viewBox="0 0 24 24"><path d="M20 3C6 1 1 7 4 15c8 7 16 0 16-12ZM3 22l13-15"/></symbol>
+<symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+<symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="10" cy="18" r="2"/></symbol>
+<symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 2 3 7 7 3-7 3-3 7-3-7-7-3 7-3Z"/></symbol>
+<symbol id="i-telegram" viewBox="0 0 24 24"><path d="m22 3-4 18-6-5-4 4 1-7 10-7-13 6-5-2Z"/></symbol>
+<symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6"/></symbol>
+<symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></symbol>
+</defs></svg>
+<div class="app"><header class="topbar"><div class="brand"><span class="brand-mark"><svg class="icon"><use href="#i-calendar"/></svg></span><div><strong>SabCal<span>.</span></strong><small>YOUR DAYS, IN HARMONY</small></div></div><div class="top-actions"><button class="icon-button" id="themeButton" aria-label="Change appearance"><svg class="icon"><use href="#i-moon"/></svg></button><button class="icon-button" id="infoButton" aria-label="App information"><svg class="icon"><use href="#i-info"/></svg></button></div></header>
+<main><section id="calendarPane"><article class="date-feature" aria-live="polite"><div class="feature-top"><span class="eyebrow" id="selectedLabel">TODAY</span><button class="today-button" id="todayButton">Back to today <svg class="icon"><use href="#i-arrow"/></svg></button></div><div class="gregorian-date"><strong id="selectedNumber"></strong><div><h1 id="selectedWeekday"></h1><p id="selectedGregorian"></p></div><span class="date-ornament" aria-hidden="true"><svg class="icon"><use href="#i-sun"/></svg></span></div><div class="other-dates"><div class="hijri-date"><svg class="icon"><use href="#i-moon"/></svg><span id="selectedHijri"></span></div><div class="desi-date"><svg class="icon"><use href="#i-leaf"/></svg><span id="selectedDesi"></span></div></div></article>
+<div class="month-toolbar"><button class="icon-button month-arrow" id="prev" aria-label="Previous month"><svg class="icon"><use href="#i-left"/></svg></button><button class="month-title" id="chooseDate" aria-label="Choose month or date"><strong id="monthTitle"></strong><svg class="icon"><use href="#i-down"/></svg></button><button class="icon-button month-arrow" id="next" aria-label="Next month"><svg class="icon"><use href="#i-right"/></svg></button></div><p class="month-subtitle" id="monthSubtitle"></p><div class="calendar-grid" id="grid" aria-label="Calendar dates"></div><div class="calendar-key"><span><i class="key-h"></i>Hijri</span><span><i class="key-d"></i>Desi</span><span><i class="key-e"></i>Occasion</span></div><div id="selectedOccasion"></div><div class="section-heading"><h2>This month’s occasions</h2><button class="text-button" id="allOccasions">View all <svg class="icon"><use href="#i-right"/></svg></button></div><div id="monthPreview"></div></section>
+<section id="occasionsPane" hidden><div class="page-heading"><span class="eyebrow">DAYS WITH MEANING</span><h1>A month to<br>remember<span>.</span></h1><p>Religious occasions from your calendar.</p></div><div class="occasion-nav"><button class="icon-button" data-month="-1" aria-label="Previous month"><svg class="icon"><use href="#i-left"/></svg></button><strong id="occasionMonth"></strong><button class="icon-button" data-month="1" aria-label="Next month"><svg class="icon"><use href="#i-right"/></svg></button></div><div id="occasionList"></div><p class="fine">Occasions follow the calculated Hijri date and your moon-sighting adjustment.</p></section>
+<section id="settingsPane" hidden><div class="page-heading"><span class="eyebrow">MAKE IT YOURS</span><h1>A calendar,<br>your way<span>.</span></h1><p>A few thoughtful details, made personal.</p></div><div class="settings-card"><div class="setting-heading"><span class="setting-icon"><svg class="icon"><use href="#i-sun"/></svg></span><div><h2>Appearance</h2><p>Set the mood for your day.</p></div></div><div class="theme-options" role="group" aria-label="Appearance"><button data-theme="system">System</button><button data-theme="light">Light</button><button data-theme="dark">Dark</button></div></div><div class="settings-card"><div class="setting-heading"><span class="setting-icon hijri"><svg class="icon"><use href="#i-moon"/></svg></span><div><h2>Hijri day adjustment</h2><p>Match your local moon sighting.</p></div></div><div class="adjuster"><button data-adjust="h:-1" aria-label="Decrease Hijri adjustment"><svg class="icon"><use href="#i-minus"/></svg></button><div><strong id="hValue">0</strong><span>days</span></div><button data-adjust="h:1" aria-label="Increase Hijri adjustment"><svg class="icon"><use href="#i-plus"/></svg></button></div><p class="fine">Adjust up to two days before or after the calculated date.</p></div><div class="settings-card"><div class="setting-heading"><span class="setting-icon desi"><svg class="icon"><use href="#i-leaf"/></svg></span><div><h2>Desi month start</h2><p>Keep in step with the seasons.</p></div></div><div class="adjuster"><button data-adjust="d:-1" aria-label="Decrease Desi adjustment"><svg class="icon"><use href="#i-minus"/></svg></button><div><strong id="dValue">0</strong><span>days</span></div><button data-adjust="d:1" aria-label="Increase Desi adjustment"><svg class="icon"><use href="#i-plus"/></svg></button></div><p class="fine">Desi/Bikrami month starts are approximate and can vary by a day.</p></div><button class="about-row" id="settingsInfo"><span class="setting-icon"><svg class="icon"><use href="#i-info"/></svg></span><span><strong>About SabCal</strong><small>Developed by Sabber Kazmi</small></span><svg class="icon"><use href="#i-right"/></svg></button></section></main>
+<nav class="bottom-nav" aria-label="Main navigation"><button data-tab="calendar" aria-current="page"><svg class="icon"><use href="#i-calendar"/></svg><span>Calendar</span></button><button data-tab="occasions"><svg class="icon"><use href="#i-spark"/></svg><span>Occasions</span></button><button data-tab="settings"><svg class="icon"><use href="#i-settings"/></svg><span>Settings</span></button></nav></div>
+<dialog class="sheet" id="dateDialog"><div class="sheet-top"><span class="eyebrow">FIND YOUR DAY</span><button class="icon-button" data-close="dateDialog" aria-label="Close date picker"><svg class="icon"><use href="#i-close"/></svg></button></div><h2>A day worth finding.</h2><p class="fine">Jump to any date to see its Gregorian, Hijri and Desi details.</p><form id="dateForm"><label for="jumpDate">Choose a date</label><input type="date" id="jumpDate" required><button class="primary-button" type="submit">Go to date <svg class="icon"><use href="#i-arrow"/></svg></button></form></dialog>
+<dialog class="sheet info-sheet" id="infoDialog"><div class="sheet-top"><span class="eyebrow">MADE WITH CARE</span><button class="icon-button" data-close="infoDialog" aria-label="Close app information"><svg class="icon"><use href="#i-close"/></svg></button></div><div class="about-mark"><svg class="icon"><use href="#i-calendar"/></svg></div><h2>SabCal<span>.</span></h2><p class="about-tagline">Three calendars.<br>One beautiful day.</p><p class="fine">Version 2.0 · Gregorian, Hijri & Desi/Bikrami</p><div class="developer-card"><span>DEVELOPER</span><strong>Developed by Sabber Kazmi</strong></div><a class="telegram-link" href="https://t.me/pixel4seriesupdates"><svg class="icon"><use href="#i-telegram"/></svg><span><strong>Join our Telegram channel</strong><small>@pixel4seriesupdates</small></span><svg class="icon"><use href="#i-arrow"/></svg></a><div class="about-note"><svg class="icon"><use href="#i-moon"/></svg><div><strong>A note on your dates</strong><p>Hijri dates use the tabular Islamic calendar. Local moon sighting can differ; use the adjustment in Settings. Desi month starts are approximate. All dates are calculated on your phone, with no connection needed.</p></div></div><div class="about-note"><svg class="icon"><use href="#i-calendar"/></svg><div><strong>Every day is yours to explore</strong><p>Tap any day for all three dates. Use the month title to jump to a date, or return to today with one tap.</p></div></div></dialog>
+<script src="calendar-data.js"></script><script src="app.js"></script></body></html>
