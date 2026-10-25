@@ -1,8 +1,12 @@
-# SabCal 2.1
+# SabCal 2.2
 
 Standalone offline calendar on the `calendar` branch. Developed by **Sabber Kazmi**.
 
 ## What's included
+
+- Monday-first weeks, with complete week rows in every month.
+- Today stays boldly filled when another date is selected; the selected date has a separate outline.
+- Green Wiladat/birth and Eid dots, red Shahadat/mourning dots, and an amber dot for other observances. Marker colors remain consistent across themes and on selected/today cells.
 
 - Six brighter color themes (Ocean, Jade, Violet, Sunset, Rose and Amber), a custom accent picker, and system/light/dark appearance.
 - Saved app-wide text size from 90% to 160%, with live preview and responsive wrapping.

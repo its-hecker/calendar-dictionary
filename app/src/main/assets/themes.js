@@ -25,7 +25,8 @@ window.SabCalThemes=(function(){
    muted:dark?'#afc1ce':'#526879',line:dark?mix(base,'#334656',.78):mix(base,'#e6edf4',.86),
    accent,'accent-text':readable(accent,bg),'on-accent':onAccent,
    soft:dark?mix(base,'#1e3244',.83):mix(base,'#ffffff',.89),
-   hijri:dark?'#72e8b4':'#05794e',desi:dark?'#ffd08c':'#9b4b0b',event:dark?'#ff9abd':'#bb205d',
+   hijri:dark?'#72e8b4':'#05794e',desi:dark?'#ffd08c':'#9b4b0b',event:dark?'#ffd08c':'#9b4b0b',
+   wiladat:dark?'#4ade80':'#087f42',shahadat:dark?'#ff6978':'#c42335',
    nav:dark?mix(base,'#14222f',.89):'#ffffff',
    'hero-start':dark?mix(base,'#14222f',.89):'#ffffff',
    'hero-end':dark?mix(base,'#14222f',.68):mix(base,'#ffffff',.87)

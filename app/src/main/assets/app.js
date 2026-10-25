@@ -57,6 +57,10 @@ function desi(date){
 }
 function eventsOf(h){return EVENTS[h.month+'-'+h.day]||[];}
 function evOf(h){return eventsOf(h).map(item=>item.title).join(' · ');}
+function eventMarkers(items,inline=false){
+ const kinds=[...new Set(items.map(item=>['celebration','remembrance'].includes(item.kind)?item.kind:'observance'))];
+ return kinds.length?`<span class="event-dots${inline?' inline':''}" aria-hidden="true">${kinds.map(kind=>`<i class="event-dot ${kind}"></i>`).join('')}</span>`:'';
+}
 function nextOccasion(date){
  for(let i=1;i<=400;i++){
   const next=day(date.getFullYear(),date.getMonth(),date.getDate()+i),h=hijri(next),items=eventsOf(h);
@@ -65,7 +69,7 @@ function nextOccasion(date){
  return null;
 }
 function occasionRow(event){
- return `<button class="occasion" data-date="${iso(event.date)}" data-event="${event.item.id}"><span class="occasion-date"><strong>${event.date.getDate()}</strong><small>${MN[event.date.getMonth()].slice(0,3)}</small></span><span class="occasion-text"><strong>${esc(event.item.title)}</strong><small>${event.h.day} ${esc(HM[event.h.month-1])} · ${weekdays[event.date.getDay()]}</small></span>${icon('right')}</button>`;
+ return `<button class="occasion" data-date="${iso(event.date)}" data-event="${event.item.id}"><span class="occasion-date"><strong>${event.date.getDate()}</strong><small>${MN[event.date.getMonth()].slice(0,3)}</small></span><span class="occasion-text"><strong>${eventMarkers([event.item],true)}${esc(event.item.title)}</strong><small>${event.h.day} ${esc(HM[event.h.month-1])} · ${weekdays[event.date.getDay()]}</small></span>${icon('right')}</button>`;
 }
 function nextButton(next){
  if(!next)return '';
@@ -74,7 +78,8 @@ function nextButton(next){
 function heroOccasions(h){
  const list=eventsOf(h),next=nextOccasion(selected);
  const label=same(selected,today())?'Today':'Selected day';
- $('selectedOccasion').innerHTML=`<button class="hero-event ${list.some(e=>e.kind==='remembrance')?'remembrance':''}" data-show-day><span class="event-label">${label}</span><strong>${list.length?esc(list.map(e=>e.title).join(' · ')):'No occasion listed for this date'}</strong><span class="event-action">${list.length?'Read about this day':'View date details'} ${icon('arrow')}</span></button>`+nextButton(next);
+ const kind=list.some(e=>e.kind==='remembrance')?'remembrance':list.some(e=>e.kind==='celebration')?'celebration':'';
+ $('selectedOccasion').innerHTML=`<button class="hero-event ${kind}" data-show-day><span class="event-label">${label}</span><strong>${eventMarkers(list,true)}${list.length?esc(list.map(e=>e.title).join(' · ')):'No occasion listed for this date'}</strong><span class="event-action">${list.length?'Read about this day':'View date details'} ${icon('arrow')}</span></button>`+nextButton(next);
 }
 function renderDayDetails(requestedId=''){
  const h=hijri(selected),d=desi(selected),items=eventsOf(h);
@@ -85,7 +90,7 @@ function renderDayDetails(requestedId=''){
  let body='';
  if(item){
   const profile=PROFILES[item.profile];
-  body=`<p class="event-kicker ${item.kind}">${esc(item.title)}</p><h2 id="dayDialogTitle">${esc(profile?.name||item.title)}</h2>`;
+  body=`<p class="event-kicker ${item.kind}">${eventMarkers([item],true)}${esc(item.title)}</p><h2 id="dayDialogTitle">${esc(profile?.name||item.title)}</h2>`;
   if(profile?.subtitle)body+=`<p class="profile-subtitle">${esc(profile.subtitle)}</p>`;
   body+=dateSummary+`<p class="event-summary">${esc(item.summary)}</p>`;
   if(profile?.facts?.length)body+='<dl class="profile-facts">'+profile.facts.map(([label,value])=>`<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`).join('')+'</dl>';
@@ -116,15 +121,15 @@ function render(){
  $('monthTitle').textContent=MN[month]+' '+year;
  $('monthSubtitle').textContent=HM[h1.month-1]+(h1.month!==h2.month?' – '+HM[h2.month-1]:'')+' '+h2.year+' AH · '+d1.name+(d1.name!==d2.name?' – '+d2.name:'')+' '+d2.year;
  let html=DOW.map(n=>'<div class="dow" aria-hidden="true">'+n.toUpperCase()+'</div>').join('');
- events=[];const start=day(year,month,1-first.getDay());
- for(let i=0;i<42;i++){
+ const offset=(first.getDay()+6)%7;
+ events=[];const start=day(year,month,1-offset),cells=Math.max(35,Math.ceil((offset+last.getDate())/7)*7);
+ for(let i=0;i<cells;i++){
   const date=day(start.getFullYear(),start.getMonth(),start.getDate()+i);
-  if(i>=35&&date.getMonth()!==month)break;
   const h=hijri(date),d=desi(date),items=eventsOf(h),inMonth=date.getMonth()===month,isSelected=same(date,selected),isToday=same(date,now);
   const label=weekdays[date.getDay()]+', '+gregorian(date)+'. '+h.day+' '+HM[h.month-1]+'. '+d.day+' '+d.name+(items.length?'. '+evOf(h):'. No listed occasion');
   const hMonth=h.day===1?`<span class="mini-month">${HM[h.month-1].slice(0,3)}</span>`:'';
   const dMonth=d.day===1?`<span class="mini-month">${esc(d.name.slice(0,3))}</span>`:'';
-  html+=`<button class="date-cell${inMonth?'':' outside'}${isToday?' is-today':''}${isSelected?' selected':''}${date.getDay()===5?' friday':''}" data-date="${iso(date)}" aria-label="${esc(label)}" aria-pressed="${isSelected}" aria-haspopup="dialog"${isToday?' aria-current="date"':''}><span class="g">${date.getDate()}</span><span class="h"><span>${h.day}</span>${hMonth}</span><span class="d"><span>${d.day}</span>${dMonth}</span>${items.length?'<i class="event-dot" aria-hidden="true"></i>':''}</button>`;
+  html+=`<button class="date-cell${inMonth?'':' outside'}${isToday?' is-today':''}${isSelected?' selected':''}${date.getDay()===5?' friday':''}" data-date="${iso(date)}" aria-label="${esc(label)}" aria-pressed="${isSelected}" aria-haspopup="dialog"${isToday?' aria-current="date"':''}><span class="g">${date.getDate()}</span><span class="h"><span>${h.day}</span>${hMonth}</span><span class="d"><span>${d.day}</span>${dMonth}</span>${eventMarkers(items)}</button>`;
   if(inMonth)items.forEach(item=>events.push({date,h,item,name:item.title}));
  }
  $('grid').innerHTML=html;$('grid').setAttribute('aria-label',MN[month]+' '+year+' dates');
