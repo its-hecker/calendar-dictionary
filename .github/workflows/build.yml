@@ -69,6 +69,10 @@ jobs:
         if: env.APP_BRANCH == 'calendar'
         run: node --test tests/calendar-data.test.cjs
 
+      - name: Verify online dictionary data parsing
+        if: env.APP_BRANCH == 'dictionary'
+        run: node --test tests/online-data.test.cjs
+
       - name: Check page JavaScript
         run: node --check app/src/main/assets/app.js
 
@@ -92,7 +96,7 @@ jobs:
 
           Android 10 or newer. Install $APK_NAME; the other app is installed separately.
           Updated interface, developer info and Telegram channel.
-          This is a debug-signed test APK. All dictionary/calendar content is bundled offline.
+          This is a debug-signed test APK. The bundled library works offline; optional dictionary online lookup requires internet.
           Dictionary speech depends on installed Android voices and a speech recognition provider.
           EOF
 
