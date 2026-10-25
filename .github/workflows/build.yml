@@ -1,0 +1,108 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [calendar, dictionary]
+  workflow_dispatch:
+    inputs:
+      app:
+        description: App branch to build
+        required: true
+        type: choice
+        default: calendar
+        options: [calendar, dictionary]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-${{ github.event_name == 'workflow_dispatch' && inputs.app || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      APP_BRANCH: ${{ github.event_name == 'workflow_dispatch' && inputs.app || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ env.APP_BRANCH }}
+          persist-credentials: false
+
+      - name: Select app
+        shell: bash
+        run: |
+          case "$APP_BRANCH" in
+            calendar)
+              echo "APP_NAME=Teen Taqwim" >> "$GITHUB_ENV"
+              echo "APK_NAME=Teen-Taqwim.apk" >> "$GITHUB_ENV"
+              ;;
+            dictionary)
+              echo "APP_NAME=Urdu Dictionary" >> "$GITHUB_ENV"
+              echo "APK_NAME=Urdu-Dictionary.apk" >> "$GITHUB_ENV"
+              ;;
+            *) echo "Unsupported app branch: $APP_BRANCH" >&2; exit 1 ;;
+          esac
+          echo "SOURCE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-java@v6.1.0
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v6.4.0
+
+      - name: Install Android SDK packages
+        run: sdkmanager "platforms;android-35" "build-tools;34.0.0"
+
+      - name: Build APK and run Android lint
+        run: ./gradlew :app:assembleDebug :app:lintDebug --no-daemon --stacktrace --console=plain
+
+      - name: Prepare download
+        shell: bash
+        run: |
+          mkdir -p dist
+          cp app/build/outputs/apk/debug/app-debug.apk "dist/$APK_NAME"
+          (cd dist && sha256sum "$APK_NAME" > "$APK_NAME.sha256")
+          cat > dist/release-notes.md <<EOF
+          Standalone Android app built from the $APP_BRANCH branch.
+
+          Source commit: $SOURCE_SHA
+
+          Android 10 or newer. Install $APK_NAME; the other app is installed separately.
+          This is a debug-signed test APK. Core calendar/dictionary content is bundled offline.
+          Dictionary speech depends on installed Android voices and a speech recognition provider.
+          EOF
+
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: ${{ env.APP_BRANCH }}-apk
+          path: |
+            dist/*.apk
+            dist/*.sha256
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload lint report
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: ${{ env.APP_BRANCH }}-lint
+          path: app/build/reports/lint-results-debug.*
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Publish test APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          gh release create "$APP_BRANCH-build-${{ github.run_number }}-${{ github.run_attempt }}" \
+            "dist/$APK_NAME" "dist/$APK_NAME.sha256" \
+            --target "$SOURCE_SHA" \
+            --title "$APP_NAME build ${{ github.run_number }}" \
+            --notes-file dist/release-notes.md \
+            --prerelease --latest=false
