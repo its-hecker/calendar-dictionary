@@ -66,7 +66,9 @@ jobs:
         run: python3 tools/verify_lexicon.py
 
       - name: Check page JavaScript
-        run: node --check app/src/main/assets/app.js
+        run: |
+          node --check app/src/main/assets/app.js
+          if [ "$APP_BRANCH" = "dictionary" ]; then node --check app/src/main/assets/example-credits.js; fi
 
       - name: Build APK and run Android lint
         run: ./gradlew :app:assembleDebug :app:lintDebug --no-daemon --stacktrace --console=plain
@@ -83,7 +85,8 @@ jobs:
           Source commit: $SOURCE_SHA
 
           Android 10 or newer. Install $APK_NAME; the other app is installed separately.
-          Version 2.0 with redesigned UI, developer info and Telegram channel.
+          Updated interface, developer info and Telegram channel.
+          Dictionary 2.1 includes offline Urdu–English example sentences; coverage varies by word.
           This is a debug-signed test APK. All dictionary/calendar content is bundled offline.
           Dictionary speech depends on installed Android voices and a speech recognition provider.
           EOF

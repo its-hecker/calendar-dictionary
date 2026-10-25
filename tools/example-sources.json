@@ -1,0 +1,25 @@
+{
+  "retrieved": "2026-10-26",
+  "files": [
+    {
+      "file": "flores200.tar.gz",
+      "url": "https://dl.fbaipublicfiles.com/nllb/flores200_dataset.tar.gz",
+      "sha256": "b8b0b76783024b85797e5cc75064eb83fc5288b41e9654dabc7be6ae944011f6"
+    },
+    {
+      "file": "tatoeba-opus.zip",
+      "url": "https://object.pouta.csc.fi/OPUS-Tatoeba/v2026-07-08/moses/en-ur.txt.zip",
+      "sha256": "2fe6fd294e4f4c824464c6bd1523b1f707f3278615df196eb3777b4a3d9dd614"
+    },
+    {
+      "file": "eng_detailed.tsv.bz2",
+      "url": "https://downloads.tatoeba.org/exports/per_language/eng/eng_sentences_detailed.tsv.bz2",
+      "sha256": "c39d2fab0cc5bc2b798b539134b83abaf5dec723a059ce55496907d08e3e9030"
+    },
+    {
+      "file": "urd_detailed.tsv.bz2",
+      "url": "https://downloads.tatoeba.org/exports/per_language/urd/urd_sentences_detailed.tsv.bz2",
+      "sha256": "871ad465167baa731cf9b541f1041958d48df60d5811edd3da2b46ae173548e1"
+    }
+  ]
+}

@@ -30,6 +30,7 @@ final class DictionaryStore implements AutoCloseable {
     private final PageCallback page;
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private SQLiteDatabase database;
+    private SQLiteDatabase examplesDatabase;
     private JSONObject metadata;
     private volatile boolean closed;
 
@@ -63,21 +64,43 @@ final class DictionaryStore implements AutoCloseable {
     }
 
     private void ensureDatabase() throws Exception {
-        if (database != null) return;
-        try (InputStream input=context.getAssets().open("data/metadata.json")) {
+        if (database != null && examplesDatabase != null) return;
+        if (metadata == null) metadata=assetJson("data/metadata.json");
+        if (database == null) {
+            File file=installDatabase("lexicon-v2",metadata,this::compressedAssets,true);
+            database=SQLiteDatabase.openDatabase(file.getPath(),null,
+                    SQLiteDatabase.OPEN_READONLY|SQLiteDatabase.NO_LOCALIZED_COLLATORS);
+        }
+        if (examplesDatabase == null) {
+            JSONObject info=assetJson("data/examples-metadata.json");
+            File file=installDatabase("examples-v1",info,
+                    () -> context.getAssets().open("data/examples.db.gz"),false);
+            examplesDatabase=SQLiteDatabase.openDatabase(file.getPath(),null,
+                    SQLiteDatabase.OPEN_READONLY|SQLiteDatabase.NO_LOCALIZED_COLLATORS);
+            metadata.put("examples",info);
+        }
+    }
+
+    private JSONObject assetJson(String path) throws Exception {
+        try (InputStream input=context.getAssets().open(path)) {
             ByteArrayOutputStream bytes=new ByteArrayOutputStream();
             byte[] buffer=new byte[4096];
             int count;
             while ((count=input.read(buffer))!=-1) bytes.write(buffer,0,count);
-            metadata=new JSONObject(new String(bytes.toByteArray(),StandardCharsets.UTF_8));
+            return new JSONObject(new String(bytes.toByteArray(),StandardCharsets.UTF_8));
         }
-        String expected=metadata.getString("databaseSha256");
-        File file=new File(context.getNoBackupFilesDir(),"lexicon-v2-"+expected.substring(0,12)+".db");
+    }
+
+    private interface CompressedData { InputStream open() throws Exception; }
+
+    private File installDatabase(String prefix,JSONObject info,CompressedData source,boolean showProgress) throws Exception {
+        String expected=info.getString("databaseSha256");
+        File file=new File(context.getNoBackupFilesDir(),prefix+"-"+expected.substring(0,12)+".db");
         if (!file.exists()) {
             File temporary=new File(file.getPath()+".tmp");
             MessageDigest digest=MessageDigest.getInstance("SHA-256");
-            long total=metadata.getLong("databaseBytes"), written=0, lastProgress=0;
-            try (InputStream input=new GZIPInputStream(compressedAssets());
+            long total=info.getLong("databaseBytes"), written=0, lastProgress=0;
+            try (InputStream input=new GZIPInputStream(source.open());
                     FileOutputStream output=new FileOutputStream(temporary)) {
                 byte[] buffer=new byte[65536];
                 int count;
@@ -86,7 +109,7 @@ final class DictionaryStore implements AutoCloseable {
                     output.write(buffer,0,count);
                     digest.update(buffer,0,count);
                     written+=count;
-                    if (written-lastProgress>4*1024*1024) {
+                    if (showProgress && written-lastProgress>4*1024*1024) {
                         reply("onProgress",Math.min(99,written*100/total));
                         lastProgress=written;
                     }
@@ -103,8 +126,7 @@ final class DictionaryStore implements AutoCloseable {
                 throw new java.io.IOException("Invalid dictionary asset");
             }
         }
-        database=SQLiteDatabase.openDatabase(file.getPath(),null,
-                SQLiteDatabase.OPEN_READONLY|SQLiteDatabase.NO_LOCALIZED_COLLATORS);
+        return file;
     }
 
     private InputStream compressedAssets() throws Exception {
@@ -190,10 +212,24 @@ final class DictionaryStore implements AutoCloseable {
         if (id==null || id.length()>256) return;
         task(token,() -> {
             try (Cursor cursor=database.rawQuery("SELECT data FROM entries WHERE id=?",new String[]{id})) {
-                if (cursor.moveToFirst()) reply("onEntry",token,new JSONObject(cursor.getString(0)));
+                if (cursor.moveToFirst()) {
+                    JSONObject entry=new JSONObject(cursor.getString(0));
+                    entry.put("bilingualExamples",examples(id));
+                    reply("onEntry",token,entry);
+                }
                 else reply("onError",token,"This word is not in this library version.");
             } catch (Exception error) { reply("onError",token,"This entry could not be opened."); }
         });
+    }
+
+    private JSONArray examples(String id) throws Exception {
+        JSONArray items=new JSONArray();
+        try (Cursor cursor=examplesDatabase.rawQuery(
+                "SELECT x.data FROM entry_examples l JOIN examples x ON x.id=l.example_id"
+                +" WHERE l.entry_id=? ORDER BY l.rank LIMIT 5",new String[]{id})) {
+            while (cursor.moveToNext()) items.put(new JSONObject(cursor.getString(0)));
+        }
+        return items;
     }
 
     @JavascriptInterface
@@ -229,7 +265,10 @@ final class DictionaryStore implements AutoCloseable {
     @Override
     public void close() {
         closed=true;
-        worker.execute(() -> { if (database!=null) { database.close(); database=null; } });
+        worker.execute(() -> {
+            if (database!=null) { database.close(); database=null; }
+            if (examplesDatabase!=null) { examplesDatabase.close(); examplesDatabase=null; }
+        });
         worker.shutdown();
     }
 }

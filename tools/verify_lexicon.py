@@ -40,5 +40,7 @@ with tempfile.TemporaryDirectory() as temporary:
         assert con.execute('SELECT id FROM lookup WHERE key>=? AND key<? LIMIT 1',(query,query+'\uffff')).fetchone(),query
     plan=con.execute('EXPLAIN QUERY PLAN SELECT id FROM lookup WHERE key>=? AND key<? LIMIT 40',('com','com\uffff')).fetchall()
     assert any('PRIMARY KEY' in row[3] for row in plan),plan
+    from verify_examples import verify
+    verify(assets, con)
     con.close()
 print('Verified {:,} headwords / {:,} definitions, all data segments, checksums, old saved-word IDs and indexed search.'.format(meta['totalHeadwords'],meta['definitions']))

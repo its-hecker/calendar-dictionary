@@ -104,6 +104,33 @@ function openEntry(id) {
 function pronunciationButton(language,text,roman,label) {
   return `<button data-speak="${esc(text)}" data-language="${language}" data-roman="${esc(roman||'')}">${icon('volume')}${label}</button>`;
 }
+function exampleKey(urdu,english) {
+  return [urdu,english].map(x=>String(x||'').replace(/\s+/g,' ').trim()).join('\t');
+}
+function pairedExamples(entry) {
+  const items=[...(entry.bilingualExamples||[])];
+  // Retain supplied sense examples even if an entry has no corpus association.
+  (entry.senses||[]).forEach(sense=>(sense.examples||[]).forEach(example=>{
+    if(isUrdu(example.text)&&example.english&&!isUrdu(example.english))items.push({urdu:example.text,english:example.english,roman:example.roman,
+      source:sense.source==='original'?'Original project example':'Wiktionary',links:[]});
+  }));
+  const seen=new Set();
+  return items.filter(example=>{
+    if(!isUrdu(example.urdu)||!example.english||isUrdu(example.english))return false;
+    const key=exampleKey(example.urdu,example.english);if(seen.has(key))return false;seen.add(key);return true;
+  }).slice(0,5);
+}
+function exampleCard(example) {
+  let body='<article class="example-card"><div class="example-language"><span>URDU · <span lang="ur" dir="rtl">اردو</span></span>';
+  body+=`<button class="example-listen" data-speak="${esc(example.urdu)}" data-language="ur-PK" data-roman="${esc(example.roman||'')}" aria-label="Listen to Urdu example">${icon('volume')}Listen</button></div>`;
+  body+=`<p class="example-urdu ur" lang="ur" dir="rtl">${esc(example.urdu)}</p>`;
+  if(example.roman)body+=`<p class="example-roman" lang="ur-Latn">${esc(example.roman)}</p>`;
+  body+='<div class="example-language"><span>ENGLISH</span>';
+  body+=`<button class="example-listen" data-speak="${esc(example.english)}" data-language="en-US" aria-label="Listen to English example">${icon('volume')}Listen</button></div>`;
+  body+=`<p class="example-english" lang="en" dir="ltr">${esc(example.english)}</p><footer class="example-source">${esc(example.attribution||example.source||'Project example')}`;
+  (example.links||[]).filter(link=>/^https:\/\//.test(link.url)).forEach(link=>{body+=` · <a href="${esc(link.url)}">${esc(link.label)}</a>`;});
+  return body+'</footer></article>';
+}
 function detail(entry) {
   const ur=entry.kind==='ur';
   $('entryKind').textContent=ur?'URDU ↔ ENGLISH':'ENGLISH DEFINITION';
@@ -112,10 +139,19 @@ function detail(entry) {
   body+=pronunciationButton(ur?'ur-PK':'en-US',entry.word,entry.roman,ur?'Listen in Urdu':'Listen');
   if(ur)body+=pronunciationButton('en-US',senses[0]?.text||'',null,'English meaning');
   body+=`<button id="saveEntry" data-save="${esc(entry.id)}" aria-pressed="${state.saved.includes(entry.id)}">${icon('save')}Save word</button></div><div class="message" id="detailMessage" role="status" hidden></div>`;
+  const examples=pairedExamples(entry), shown=new Set(examples.map(x=>exampleKey(x.urdu,x.english)));
+  body+='<section class="word-examples" aria-labelledby="examplesHeading"><div class="examples-heading"><h3 id="examplesHeading">Example sentences</h3><span>URDU + ENGLISH</span></div>';
+  if(examples.length){
+    body+='<p class="examples-intro">See this word in context.</p>'+exampleCard(examples[0]);
+    if(examples.length>1)body+=`<details class="more-examples"><summary>${examples.length-1} more ${examples.length===2?'example':'examples'}</summary>${examples.slice(1).map(exampleCard).join('')}</details>`;
+  }else body+='<p class="examples-unavailable">An Urdu–English sentence pair is not yet available for this word in the offline collection. Meanings and any source examples are shown below.</p>';
+  body+='</section><h3 class="meanings-heading">Meanings & usage</h3>';
   senses.forEach((sense,i)=>{
     body+=`<section class="sense"><div class="sense-label"><span class="sense-number">${i+1}</span><span>${esc(sense.pos || 'word')}</span>${sense.tags?.length?'<span>· '+esc(sense.tags.join(', '))+'</span>':''}${sense.source==='webster1913'?'<span>· Historical · 1913</span>':''}</div><p>${esc(sense.text)}</p>`;
     (sense.examples||[]).forEach(example=>{
+      if(shown.has(exampleKey(example.text,example.english)))return;
       body+='<blockquote>';
+      body+=`<span class="usage-label">${isUrdu(example.text)?'Urdu source example':'English source example'}</span>`;
       if(isUrdu(example.text))body+=`<p class="ur" lang="ur" dir="rtl">${esc(example.text)}</p>`;
       else body+=`<p>${esc(example.text)}</p>`;
       if(example.roman)body+=`<small>${esc(example.roman)}</small>`;
@@ -140,6 +176,7 @@ window.DictionaryNative={
     $('headwordCount').textContent=number(stats.totalHeadwords)+' headwords, always with you';
     $('countSubtitle').textContent=number(stats.urduHeadwords)+' Urdu · '+number(stats.englishHeadwords)+' English';
     $('infoBilingual').textContent=number(stats.urduHeadwords);$('infoEnglish').textContent=number(stats.englishHeadwords);$('infoDefinitions').textContent=number(stats.definitions);
+    if(stats.examples)$('exampleCoverage').textContent=number(stats.examples.sentencePairs)+' Urdu–English sentence pairs for '+number(stats.examples.coveredHeadwords)+' headwords, stored offline. Coverage varies by word.';
     $('dailyDate').textContent=new Intl.DateTimeFormat('en',{day:'numeric',month:'short'}).format(new Date());
     DictionaryApi.daily(Math.floor(Date.now()/864e5),'daily');
     if(!read('dictionary.migrated.v2',false)){
@@ -219,6 +256,7 @@ document.addEventListener('click',e=>{
 document.querySelectorAll('dialog').forEach(dialog=>dialog.addEventListener('click',event=>{if(event.target===dialog){const r=dialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)dialog.close();}}));
 window.AppUi={back(){if($('entryDialog').open){$('entryDialog').close();return true;}if($('infoDialog').open){$('infoDialog').close();return true;}if(state.tab!=='discover'||q.value.trim()||state.browse){setTab('discover');return true;}return false;}};
 const themeMedia=matchMedia('(prefers-color-scheme:dark)');if(themeMedia.addEventListener)themeMedia.addEventListener('change',applyTheme);
+$('exampleCredits').textContent=window.EXAMPLE_CREDITS||'';
 $('dataCredits').textContent=window.LICENSE_TEXT?.credits||'';$('englishLicense').textContent=window.LICENSE_TEXT?.english||'';$('fontLicense').textContent=window.LICENSE_TEXT?.font||'';
 applyTheme();persist();
 if(window.DictionaryApi)DictionaryApi.init();else{$('loadingTitle').textContent='Your offline dictionary';$('loadingText').textContent='Open the Android app to explore the complete bundled library.';}

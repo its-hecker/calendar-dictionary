@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "sentencePairs": 4609,
+  "coveredHeadwords": 11983,
+  "urduHeadwords": 3641,
+  "englishHeadwords": 8342,
+  "associations": 30507,
+  "databaseBytes": 5206016,
+  "databaseSha256": "0fc0ceda30654b8b35b20870c116021a31970fb537079f15bfeabbd3f914d3fe",
+  "compressedBytes": 1816951,
+  "compressedSha256": "0321a7b5e011ed5436ea481a1f0c310c63fdc8463b5abaab7f2559db31ca5862",
+  "sources": {
+    "Tatoeba": 1475,
+    "FLORES-200": 2008,
+    "Wiktionary": 905,
+    "Project example": 199,
+    "Original project example": 22
+  },
+  "date": "2026-10-26"
+}

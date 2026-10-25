@@ -1,0 +1,34 @@
+Offline Urdu–English example sentences
+
+4,609 paired sentences cover 11,983 headwords (3,641 Urdu and 8,342 English).
+A maximum of five examples is attached to each headword. Coverage is partial.
+Corpus examples illustrate the headword, not necessarily every numbered sense.
+No live translation service, runtime download or generated placeholder is used.
+
+FLORES-200: Meta AI / FLORES-200 contributors; original 2022 release.
+2,008 intact English–Urdu sentence pairs, dev/devtest splits.
+CC BY-SA 4.0: https://creativecommons.org/licenses/by-sa/4.0/
+https://github.com/facebookresearch/flores/tree/main/flores200
+Original public download: https://dl.fbaipublicfiles.com/nllb/flores200_dataset.tar.gz
+NLLB Team et al. (2022), No Language Left Behind: Scaling Human-Centered Machine Translation.
+Selected and indexed by whole headwords/phrases and available Urdu forms.
+The adapted FLORES data remains available under CC BY-SA 4.0.
+
+Tatoeba contributors, via OPUS Tatoeba v2026-07-08.
+1,475 sentence pairs. CC BY 2.0 France.
+https://tatoeba.org/ and https://opus.nlpl.eu/
+Every displayed Tatoeba example credits both current authors and links each original sentence.
+Only pairs whose current authors could be identified in the 26 October 2026 exports were included.
+J. Tiedemann (2012), Parallel Data, Tools and Interfaces in OPUS.
+Selection: whole-word matching, intact translations, length limits, identifiable authors.
+Community translations can contain errors; a source link is provided.
+
+Wiktionary contributors via Kaikki: 905 paired usage examples.
+CC BY-SA 4.0; each example links to its entry and contributor history.
+22 original supplied examples and 199 additional original project sentence pairs are included.
+
+The full adapted example database is freely bundled as data/examples.db.gz.
+It is ordinary gzip-compressed SQLite, with full text and author/source attribution.
+See tools/build_examples.py and README for rebuilding or exporting plain JSONL.
+Source hashes are pinned in tools/example-sources.json.
+Dataset licenses apply to their data rather than unrelated app code.
