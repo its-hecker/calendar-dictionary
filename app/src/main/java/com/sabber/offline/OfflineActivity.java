@@ -99,6 +99,18 @@ public class OfflineActivity extends Activity {
         ThemeBridge(View root) { this.root = root; }
 
         @JavascriptInterface
+        public void setPalette(String background, boolean dark) {
+            if (background == null || !background.matches("#[0-9a-fA-F]{6}")) return;
+            setDark(dark);
+            runOnUiThread(() -> {
+                if (isDestroyed() || web == null) return;
+                int color = android.graphics.Color.parseColor(background);
+                root.setBackgroundColor(color);
+                web.setBackgroundColor(color);
+            });
+        }
+
+        @JavascriptInterface
         public void setDark(boolean dark) {
             runOnUiThread(() -> {
                 if (isDestroyed() || web == null) return;
