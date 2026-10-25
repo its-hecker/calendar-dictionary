@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Urdu ⇄ English Dictionary</title>
+<style>
+:root{--bg:#eef1f6;--card:#fff;--tx:#14213d;--mu:#5d6785;--ac:#1f3a8a;--gold:#c8921a;--ln:#d5dae6}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1424;--card:#182038;--tx:#e8ecf8;--mu:#9aa5c6;--ac:#8fa8ff;--gold:#f0b94a;--ln:#2a3556}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 system-ui,-apple-system,sans-serif}
+main{max-width:620px;margin:auto;padding:22px 16px 48px}
+h1{font-size:1.35rem;margin:0}
+.mu{color:var(--mu);font-size:.9rem}
+input{width:100%;padding:14px;margin-top:14px;font-size:1.1rem;border:2px solid var(--ln);border-radius:12px;background:var(--card);color:var(--tx)}
+input:focus,button:focus-visible{outline:3px solid var(--ac);outline-offset:1px}
+.card{background:var(--card);border:1px solid var(--ln);border-radius:14px;padding:16px;margin-top:14px}
+.ur{font-family:"Noto Nastaliq Urdu","Jameel Noori Nastaleeq","Noto Naskh Arabic",serif;direction:rtl;text-align:right;line-height:2.1}
+.big{font-size:2rem;color:var(--ac)}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px}
+button{font:inherit;font-size:.9rem;padding:5px 12px;border:1px solid var(--ln);border-radius:20px;background:var(--card);color:var(--tx)}
+.star{color:var(--gold);font-size:1.2rem;padding:2px 10px}
+.spk{padding:0 8px}
+hr{border:0;border-top:1px solid var(--ln);margin:10px 0}
+#msg{color:#c0392b;margin-top:10px}
+</style>
+</head>
+<body>
+<main>
+<h1>Urdu ⇄ English Dictionary</h1>
+<div class="mu">Works offline. Type an Urdu or English word.</div>
+<input id="q" placeholder="محبت  or  hope" autocomplete="off">
+<div class="row" id="mic" style="display:none"><button data-l="ur-PK">🎤 Urdu</button><button data-l="en-US">🎤 English</button></div>
+<div id="msg"></div>
+<div id="out"></div>
+<div id="wod"></div>
+<div id="fav"></div>
+<div id="all"></div>
+</main>
+<script>
+// [Urdu, Roman, English, part of speech, example Urdu, example Roman, example English, Urdu synonyms, English synonyms]
+const D=[
+['محبت','mohabbat','love','noun','ماں کی محبت سب سے بڑی نعمت ہے۔','Maan ki mohabbat sab se bari nemat hai.','A mother’s love is the greatest blessing.',['پیار','عشق','الفت'],['affection','fondness','devotion']],
+['دوست','dost','friend','noun','میرا دوست ہر مشکل میں میرے ساتھ ہوتا ہے۔','Mera dost har mushkil mein mere sath hota hai.','My friend is with me in every difficulty.',['یار','ساتھی','رفیق'],['companion','pal','ally']],
+['کتاب','kitab','book','noun','میں روز رات کو ایک کتاب پڑھتا ہوں۔','Main roz raat ko aik kitab parhta hoon.','I read a book every night.',['صحیفہ','تصنیف'],['volume','publication']],
+['پانی','pani','water','noun','صحت کے لیے روزانہ زیادہ پانی پیئیں۔','Sehat ke liye rozana zyada pani piyen.','Drink plenty of water daily for your health.',['آب','جل'],['H2O','aqua']],
+['علم','ilm','knowledge','noun','علم انسان کو روشنی دیتا ہے۔','Ilm insan ko roshni deta hai.','Knowledge gives a person light.',['آگاہی','دانش','معلومات'],['learning','wisdom','awareness']],
+['امید','umeed','hope','noun','مشکل وقت میں بھی امید نہیں چھوڑنی چاہیے۔','Mushkil waqt mein bhi umeed nahin chhorni chahiye.','One should not give up hope even in hard times.',['آس','توقع'],['optimism','expectation']],
+['سفر','safar','journey, travel','noun','ہمارا سفر صبح پانچ بجے شروع ہوا۔','Hamara safar subah paanch baje shuru hua.','Our journey began at five in the morning.',['مسافرت','سیاحت'],['trip','voyage']],
+['وقت','waqt','time','noun','وقت کی قدر کرنا کامیابی کی کنجی ہے۔','Waqt ki qadr karna kamyabi ki kunji hai.','Valuing time is the key to success.',['زمانہ','گھڑی'],['period','moment']],
+['خوشی','khushi','happiness, joy','noun','بچوں کی ہنسی دیکھ کر مجھے بہت خوشی ہوئی۔','Bachon ki hansi dekh kar mujhe bohat khushi hui.','I felt great joy seeing the children laugh.',['مسرت','شادمانی','فرحت'],['delight','pleasure','gladness']],
+['دل','dil','heart','noun','اس کا دل بہت نرم ہے۔','Us ka dil bohat naram hai.','He has a very tender heart.',['قلب','جی'],['core','soul']],
+['گھر','ghar','house, home','noun','شام کو میں جلدی گھر آ گیا۔','Sham ko main jaldi ghar aa gaya.','I came home early in the evening.',['مکان','مسکن'],['dwelling','residence']],
+['زندگی','zindagi','life','noun','زندگی بہت قیمتی ہے، اسے ضائع نہ کریں۔','Zindagi bohat qeemti hai, ise zaya na karen.','Life is very precious; do not waste it.',['حیات','جیون'],['existence','being']],
+['امن','aman','peace','noun','ہم سب شہر میں امن چاہتے ہیں۔','Hum sab shehar mein aman chahte hain.','We all want peace in the city.',['سکون','اطمینان','صلح'],['calm','harmony','tranquility']],
+['ہمت','himmat','courage','noun','اس نے بڑی ہمت سے مشکل کا سامنا کیا۔','Us ne bari himmat se mushkil ka samna kiya.','He faced the difficulty with great courage.',['حوصلہ','جرات','بہادری'],['bravery','nerve']],
+['سچ','sach','truth','noun','ہمیشہ سچ بولنا چاہیے۔','Hamesha sach bolna chahiye.','One should always speak the truth.',['حقیقت','صداقت'],['fact','honesty','reality']],
+['خوبصورت','khoobsurat','beautiful','adjective','یہ باغ بہت خوبصورت ہے۔','Yeh bagh bohat khoobsurat hai.','This garden is very beautiful.',['حسین','دلکش','پیارا'],['lovely','pretty','attractive']],
+['بڑا','bara','big, large','adjective','ان کا گھر بہت بڑا ہے۔','Un ka ghar bohat bara hai.','Their house is very big.',['وسیع','کلاں'],['large','huge']],
+['جلدی','jaldi','quickly, hurry','adverb','جلدی کرو، ہم لیٹ ہو جائیں گے۔','Jaldi karo, hum late ho jayenge.','Hurry up, we will be late.',['فوراً','تیزی سے'],['quickly','promptly','swiftly']],
+['شکریہ','shukriya','thanks','noun','آپ کی مدد کا بہت شکریہ۔','Aap ki madad ka bohat shukriya.','Thank you very much for your help.',['مہربانی','سپاس'],['gratitude','appreciation']],
+['مدد','madad','help','noun','مجھے آپ کی مدد چاہیے۔','Mujhe aap ki madad chahiye.','I need your help.',['اعانت','سہارا','تعاون'],['assistance','support','aid']],
+['استاد','ustad','teacher','noun','ہمارے استاد بہت محنتی ہیں۔','Hamare ustad bohat mehnati hain.','Our teacher is very hardworking.',['معلم','مدرس'],['instructor','tutor','mentor']],
+['محنت','mehnat','hard work','noun','کامیابی محنت سے ملتی ہے۔','Kamyabi mehnat se milti hai.','Success comes through hard work.',['مشقت','کوشش'],['effort','labour','diligence']]
+];
+const $=i=>document.getElementById(i),q=$('q'),U=/[\u0600-\u06FF]/;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const msg=m=>{$('msg').textContent=m||''};
+let fav=[];try{fav=JSON.parse(localStorage.getItem('fav')||'[]')}catch(e){}
+const store=()=>{try{localStorage.setItem('fav',JSON.stringify(fav))}catch(e){}};
+const spk=(l,t,r)=>`<button class="spk" data-l="${l}" data-t="${esc(t)}" data-r="${esc(r||'')}" aria-label="Listen">🔊</button>`;
+function card(i){const e=D[i];
+return `<div class="card"><div class="row" style="margin:0"><button class="star" data-i="${i}" aria-label="Save word">${fav.includes(i)?'★':'☆'}</button><span class="ur big">${e[0]}</span>${spk('ur',e[0],e[1])}<span class="mu">${e[1]}, ${e[3]}</span></div>
+<div style="margin-top:6px;font-size:1.15rem"><b>${e[2]}</b> ${spk('en',e[2])}</div><hr>
+<div class="ur">${e[4]} ${spk('ur',e[4],e[5])}</div><div class="mu">${e[5]}</div><div>${e[6]} ${spk('en',e[6])}</div><hr>
+<div><b>Urdu synonyms:</b> <span class="ur">${e[7].join('، ')}</span></div><div><b>English synonyms:</b> ${e[8].join(', ')}</div></div>`}
+function find(s){s=s.trim();const t=s.toLowerCase(),r=[];if(!s)return r;
+D.forEach((e,i)=>{let k=99;
+if(U.test(s)){if(e[0]===s)k=0;else if(e[0].includes(s))k=1;else if(e[7].includes(s))k=2;}
+else{const m=e[2].split(', ');if(m.includes(t))k=0;else if(m.some(w=>w.startsWith(t))||e[1].startsWith(t))k=1;else if(e[8].includes(t))k=2;}
+if(k<99)r.push([k,i]);});
+return r.sort((a,b)=>a[0]-b[0]).map(x=>x[1]).slice(0,6)}
+function show(ids,s){$('out').innerHTML=ids.length?ids.map(card).join(''):(s?`<div class="card mu">No match for “${esc(s)}”. This list has ${D.length} words so far.</div>`:'')}
+function chips(el,ids,title){$(el).innerHTML=ids.length?`<div class="card"><b>${title}</b><div class="row">${ids.map(i=>`<button class="w" dir="auto" data-i="${i}">${D[i][0]} ${D[i][2].split(', ')[0]}</button>`).join('')}</div></div>`:''}
+function ui(){const d=Math.floor(Date.now()/864e5)%D.length;
+$('wod').innerHTML=`<div class="mu" style="margin-top:18px">Word of the day</div>`+card(d);
+chips('fav',fav,'★ Saved words');chips('all',D.map((e,i)=>i),'All words ('+D.length+')')}
+function say(t,l){const s=window.speechSynthesis;
+if(!s||!window.SpeechSynthesisUtterance)return msg('Voice playback isn’t supported in this browser. Try Chrome.');
+msg('');s.cancel();const u=new SpeechSynthesisUtterance(t);u.lang=l;u.rate=.9;
+const v=s.getVoices().find(v=>v.lang.toLowerCase().replace('_','-').startsWith(l.slice(0,2)));if(v)u.voice=v;
+u.onerror=ev=>msg('Could not play audio ('+ev.error+'). Check the media volume and text-to-speech settings.');
+setTimeout(()=>s.speak(u),50)}
+function sayUr(u,r){const s=window.speechSynthesis;const has=s&&s.getVoices().some(v=>/^ur/i.test(v.lang));(has||!r)?say(u,'ur-PK'):say(r,'hi-IN')}
+q.oninput=()=>show(find(q.value),q.value.trim());
+document.onclick=e=>{const b=e.target.closest('button');if(!b)return;
+if(b.classList.contains('spk'))return b.dataset.l==='ur'?sayUr(b.dataset.t,b.dataset.r):say(b.dataset.t,'en-US');
+const i=+b.dataset.i;
+if(b.classList.contains('star')){fav=fav.includes(i)?fav.filter(x=>x!==i):[i,...fav];store();q.oninput();ui()}
+else if(b.classList.contains('w')){q.value=D[i][0];show([i]);scrollTo(0,0)}};
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+$('mic').style.display='flex';
+$('mic').onclick=e=>{const b=e.target.closest('button');if(!b)return;
+if(!SR)return msg('Voice input isn’t supported in this browser. Try Chrome.');
+const lab=b.textContent;msg('');
+try{const r=new SR();r.lang=b.dataset.l;b.textContent='🎤 Listening…';
+r.onresult=ev=>{q.value=ev.results[0][0].transcript.trim();q.oninput()};
+r.onend=()=>{b.textContent=lab};
+r.onerror=ev=>msg('Voice input failed ('+ev.error+'). Allow the microphone and check your internet connection.');
+r.start()}catch(err){b.textContent=lab;msg('Voice input could not start.')}};
+ui();
+</script>
+<script src="android-voice.js"></script>
+</body>
+</html>
