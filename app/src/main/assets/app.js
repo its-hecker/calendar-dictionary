@@ -4,13 +4,17 @@ const icon = name => `<svg class="icon" aria-hidden="true"><use href="#i-${name}
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const isUrdu = text => /[\u0600-\u06ff]/.test(text);
 function read(key, fallback) { try { const value=JSON.parse(localStorage.getItem(key)); return value ?? fallback; } catch (_) { return fallback; } }
-function write(key, value) { try { localStorage.setItem(key,JSON.stringify(value)); } catch (_) {} }
+function write(key, value) { try { localStorage.setItem(key,JSON.stringify(value));return true; } catch (_) {return false;} }
 const savedRaw=read('dictionary.saved.v2',[]), historyRaw=read('dictionary.history.v2',[]), snapshotRaw=read('dictionary.snapshots.v2',{});
 const state={ready:false,stats:null,tab:'discover',filter:'all',browse:false,items:[],more:false,offset:0,
   saved:Array.isArray(savedRaw)?savedRaw.filter(x=>typeof x==='string').slice(0,1000):[],
   history:Array.isArray(historyRaw)?historyRaw.filter(x=>typeof x==='string').slice(0,50):[],
   snapshots:snapshotRaw && typeof snapshotRaw==='object' && !Array.isArray(snapshotRaw)?snapshotRaw:{},
-  currentEntry:null,daily:null,request:0,queryToken:'',entryToken:'',theme:read('dictionary.theme','system')};
+  currentEntry:null,daily:null,request:0,queryToken:'',entryToken:'',theme:read('dictionary.theme','system'),
+  mode:read('dictionary.mode','offline')==='online'?'online':'offline',onlineToken:'',onlineAction:null,onlineItem:null,
+  onlineEntries:read('dictionary.online.entries.v1',{})};
+if(!state.onlineEntries||typeof state.onlineEntries!=='object'||Array.isArray(state.onlineEntries))state.onlineEntries={};
+Object.keys(state.onlineEntries).forEach(id=>{const e=state.onlineEntries[id];if(!id.startsWith('online:')||!e?.online||e.id!==id||!Array.isArray(e.senses)||!Number.isFinite(e.fetchedAt)||typeof e.word!=='string')delete state.onlineEntries[id];});
 const q=$('q');
 let searchTimer,toastTimer,activeMic=null;
 const number = n => new Intl.NumberFormat('en').format(n);
@@ -26,6 +30,10 @@ function applyTheme() {
   if (window.AppTheme) AppTheme.setDark(dark);
 }
 function persist() {
+  const onlineKeep=new Set([...state.saved.filter(id=>id.startsWith('online:')),...state.history.filter(id=>id.startsWith('online:')).slice(0,20)]);
+  Object.keys(state.onlineEntries).forEach(id=>{if(!onlineKeep.has(id))delete state.onlineEntries[id];});
+  state.history=state.history.filter(id=>!id.startsWith('online:')||state.onlineEntries[id]);
+  write('dictionary.online.entries.v1',state.onlineEntries);
   write('dictionary.saved.v2',state.saved); write('dictionary.history.v2',state.history);
   const keep=new Set([...state.saved,...state.history]);
   Object.keys(state.snapshots).forEach(id=>{if(!keep.has(id)) delete state.snapshots[id];});
@@ -33,9 +41,13 @@ function persist() {
   $('savedCount').textContent=state.saved.length; $('savedCount').hidden=!state.saved.length;
 }
 function snapshot(item) {
-  state.snapshots[item.id]={id:item.id,word:item.word,ur:item.ur,roman:item.roman,pos:item.pos,preview:item.preview || item.senses?.[0]?.text || '',kind:item.kind};
+  state.snapshots[item.id]={id:item.id,word:item.word,ur:item.ur,roman:item.roman,pos:item.pos,preview:item.preview || item.senses?.[0]?.text || '',kind:item.kind,online:!!item.online};
 }
 function saveWord(id) {
+  if(id.startsWith('online:')&&!state.saved.includes(id)){
+    if(state.saved.filter(x=>x.startsWith('online:')).length>=50)return toast('You can keep 50 online entries saved offline. Remove one to add another.');
+    if(!state.onlineEntries[id]||!write('dictionary.online.entries.v1',state.onlineEntries))return toast('This entry could not be stored. Free some app storage and try again.');
+  }
   if (state.saved.includes(id)) {state.saved=state.saved.filter(x=>x!==id);toast('Removed from saved words');}
   else if (state.saved.length<1000) {state.saved.unshift(id);toast('Word saved');}
   else return toast('Your collection has reached 1,000 saved words');
@@ -52,7 +64,7 @@ function updateSaveButtons() {
   });
 }
 function row(item) {
-  return `<article class="result-card" data-kind="${item.kind==='ur'?'ur':'en'}"><button class="result-open" data-entry="${esc(item.id)}"><strong class="result-word ${item.kind==='ur'?'ur':''}" ${item.kind==='ur'?'lang="ur" dir="rtl"':''}>${esc(item.word)}</strong><span class="result-roman">${esc(item.roman || item.pos || '')}</span><p class="result-meaning">${esc(item.preview)}</p><span class="result-footer"><span class="type-badge">${item.kind==='ur'?'URDU ↔ ENGLISH':'ENGLISH DEFINITION'}</span>${icon('arrow')}</span></button><button class="save-button" data-save="${esc(item.id)}" aria-label="Save word" aria-pressed="${state.saved.includes(item.id)}">${icon('save')}</button></article>`;
+  return `<article class="result-card" data-kind="${item.kind==='ur'?'ur':'en'}"><button class="result-open" data-entry="${esc(item.id)}"><strong class="result-word ${item.kind==='ur'?'ur':''}" ${item.kind==='ur'?'lang="ur" dir="rtl"':''}>${esc(item.word)}</strong><span class="result-roman">${esc(item.roman || item.pos || '')}</span><p class="result-meaning">${esc(item.preview)}</p><span class="result-footer"><span class="type-badge">${item.online?'ONLINE · STORED ON DEVICE':item.kind==='ur'?'URDU ↔ ENGLISH':'ENGLISH DEFINITION'}</span>${icon('arrow')}</span></button><button class="save-button" data-save="${esc(item.id)}" aria-label="Save word" aria-pressed="${state.saved.includes(item.id)}">${icon('save')}</button></article>`;
 }
 function empty(title,text) { $('emptyTitle').textContent=title; $('emptyText').textContent=text; $('emptyState').hidden=false; }
 function showHome() {
@@ -75,14 +87,17 @@ function renderCollection() {
   updateSaveButtons();
 }
 function setTab(tab) {
-  state.tab=tab; state.queryToken=''; state.browse=false; q.value='';$('clearSearch').hidden=true;msg('');
+  cancelOnline();
+  state.tab=tab; state.queryToken='';state.entryToken=''; state.browse=false; q.value='';$('clearSearch').hidden=true;msg('');
   document.querySelectorAll('[data-tab]').forEach(button=>{if(button.dataset.tab===tab)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');});
-  if(tab==='discover') showHome(); else renderCollection();
+  if(tab==='discover'){if(state.mode==='online')onlineIdle();else showHome();}else renderCollection();
+  syncMode();
   if(!matchMedia('(prefers-reduced-motion:reduce)').matches) $('main').animate([{opacity:.4,transform:'translateY(5px)'},{opacity:1,transform:'none'}],{duration:200});
   scrollTo({top:0,behavior:'auto'});
 }
 function search(reset=true) {
   clearTimeout(searchTimer);
+  if(state.mode==='online')return onlineSearch();
   if(!state.ready)return;
   if(state.tab!=='discover') {
     state.tab='discover';document.querySelectorAll('[data-tab]').forEach(b=>{if(b.dataset.tab==='discover')b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
@@ -97,10 +112,105 @@ function search(reset=true) {
 }
 function explore(text) {setTab('discover');q.value=text;search();}
 function openEntry(id) {
+  cancelOnline();
+  state.entryToken='';
+  if(id.startsWith('online:')){
+    const entry=state.onlineEntries[id];
+    if(!entry)return msg('This cached online entry is no longer stored. Look up the word again in Online mode.');
+    rememberOnline(entry);state.currentEntry=entry;detail(entry);return;
+  }
   if(!state.ready)return;
   state.entryToken='entry-'+(++state.request);
   DictionaryApi.entry(id,state.entryToken);
 }
+function syncMode(){
+  const online=state.mode==='online';
+  document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===state.mode)));
+  $('filters').hidden=online;$('onlineControls').hidden=!online;$('onlineStatus').hidden=!online;
+  $('connectionLabel').innerHTML='<span class="live-dot"></span>'+(online?'Online lookup':'Offline library');
+  q.placeholder=online?'English or اردو word':'English, اردو or Roman Urdu';q.maxLength=online?80:160;
+  $('loading').hidden=state.ready||online||state.tab!=='discover';
+  $('main').hidden=!state.ready&&!online&&state.tab==='discover';
+}
+function cancelOnline(){
+  state.onlineToken='';state.onlineAction=null;
+  if(window.OnlineApi)OnlineApi.cancel();
+  $('searchOnline').disabled=false;
+  document.querySelectorAll('[data-translate]').forEach(b=>{b.disabled=state.mode!=='online';});
+}
+function setMode(mode){
+  cancelOnline();clearTimeout(searchTimer);state.queryToken='';state.entryToken='';state.mode=mode==='online'?'online':'offline';
+  write('dictionary.mode',state.mode);msg('');syncMode();
+  if(state.tab==='discover'){
+    if(state.mode==='online')onlineIdle();else if(q.value.trim()&&state.ready)search();else showHome();
+  }
+}
+function onlineIdle(){
+  state.onlineItem=null;showList('Online lookup');$('results').innerHTML='';$('listMeta').textContent='';$('loadMore').hidden=true;
+  $('refreshOnline').hidden=true;$('onlineStatus').textContent='Enter an English or Urdu word, then tap Search. Internet is required for new results.';
+  empty('A wider world of words','Look up live dictionary meanings. Roman Urdu search is available in Offline mode.');
+}
+function rememberOnline(entry){
+  state.onlineEntries[entry.id]=entry;snapshot(entry);
+  state.history=[entry.id,...state.history.filter(id=>id!==entry.id)].slice(0,50);persist();
+}
+function onlineResult(entry,cached=false){
+  rememberOnline(entry);state.onlineItem=entry;state.items=[entry];
+  showList('Online result');$('results').innerHTML=row(entry);$('listMeta').textContent=cached?'Cached result':'Live result';$('loadMore').hidden=true;
+  const date=new Intl.DateTimeFormat('en',{day:'numeric',month:'short',year:'numeric'}).format(entry.fetchedAt);
+  $('onlineStatus').textContent=(cached?'Stored on this device.':'Fetched online.')+' Last fetched '+date+'.';
+  $('refreshOnline').hidden=false;updateSaveButtons();
+}
+function onlineSearch(refresh=false){
+  const query=q.value.trim().normalize('NFKC');cancelOnline();msg('');$('clearSearch').hidden=!query;if(!query)return onlineIdle();
+  if(query.length>80)return msg('Enter a word or short phrase, up to 80 characters.');
+  state.tab='discover';document.querySelectorAll('[data-tab]').forEach(b=>{if(b.dataset.tab==='discover')b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
+  syncMode();
+  const cached=state.onlineEntries[OnlineWords.key(query)];
+  if(cached&&!refresh)return onlineResult(cached,true);
+  if(!window.OnlineApi)return msg('Online lookup is available in the Android app.');
+  const token='online-'+(++state.request);state.onlineToken=token;state.onlineAction={kind:'lookup',query};
+  showList('Online lookup');$('results').innerHTML='';$('listMeta').textContent='Looking up your word…';$('loadMore').hidden=true;$('refreshOnline').hidden=true;
+  $('onlineStatus').textContent='Contacting the online dictionary…';$('searchOnline').disabled=true;
+  OnlineApi.lookup(query,OnlineWords.language(query),token);
+}
+function translateOnline(kind){
+  const entry=state.currentEntry;if(!entry?.online||state.mode!=='online')return;
+  const original=kind==='word'?{text:entry.word,language:entry.kind}:OnlineWords.example(entry);
+  if(!original||!window.OnlineApi)return;
+  cancelOnline();msg('');const token='translation-'+(++state.request);
+  state.onlineToken=token;state.onlineAction={kind,entryId:entry.id,original};
+  document.querySelectorAll('[data-translate]').forEach(b=>{b.disabled=true;});
+  msg('Translating '+(kind==='word'?'the word':'the example')+'…');
+  OnlineApi.translate(original.text,original.language,token);
+}
+window.OnlineNative={
+  onLookup(token,payload){
+    if(token!==state.onlineToken||state.mode!=='online')return;
+    const action=state.onlineAction;cancelOnline();
+    try{onlineResult(OnlineWords.parse(payload,action.query));}catch(error){$('listMeta').textContent='';msg(error.message);empty('No online entry','Try another spelling, or switch to Offline.');}
+  },
+  onTranslation(token,text){
+    if(token!==state.onlineToken||state.mode!=='online')return;
+    const action=state.onlineAction;cancelOnline();const entry=state.onlineEntries[action.entryId];
+    if(!entry||state.currentEntry?.id!==entry.id||!$('entryDialog').open)return;
+    try{
+      if(action.kind==='word'){const target=entry.kind==='en'?'ur':'en';entry.machineTranslation={text:OnlineWords.translation(String(text),target),language:target};}
+      else entry.bilingualExamples=[OnlineWords.pair(entry,action.original,text)];
+      rememberOnline(entry);msg('');detail(entry);
+    }catch(error){msg(error.message);}
+  },
+  onError(token,text){
+    if(token!==state.onlineToken)return;
+    const action=state.onlineAction;cancelOnline();
+    if(action?.kind==='lookup'){
+      const cached=state.onlineEntries[OnlineWords.key(action.query)];
+      if(cached)onlineResult(cached,true);else{$('listMeta').textContent='';empty('Online lookup unavailable','Check your connection, try another spelling, or use Offline.');}
+      $('onlineStatus').textContent=cached?'Connection unavailable. Showing your stored result.':'Online lookup did not finish.';
+    }
+    msg(text);
+  }
+};
 function pronunciationButton(language,text,roman,label) {
   return `<button data-speak="${esc(text)}" data-language="${language}" data-roman="${esc(roman||'')}">${icon('volume')}${label}</button>`;
 }
@@ -133,21 +243,33 @@ function exampleCard(example) {
 }
 function detail(entry) {
   const ur=entry.kind==='ur';
-  $('entryKind').textContent=ur?'URDU ↔ ENGLISH':'ENGLISH DEFINITION';
+  $('entryKind').textContent=entry.online?'ONLINE DICTIONARY':ur?'URDU ↔ ENGLISH':'ENGLISH DEFINITION';
   const senses=entry.senses || [];
   let body=`<h2 class="detail-title ${ur?'ur':''}" ${ur?'dir="rtl" lang="ur"':''}>${esc(entry.word)}</h2><p class="detail-roman">${esc([entry.roman,entry.ipa].filter(Boolean).join(' · '))}</p><div class="detail-actions">`;
   body+=pronunciationButton(ur?'ur-PK':'en-US',entry.word,entry.roman,ur?'Listen in Urdu':'Listen');
   if(ur)body+=pronunciationButton('en-US',senses[0]?.text||'',null,'English meaning');
   body+=`<button id="saveEntry" data-save="${esc(entry.id)}" aria-pressed="${state.saved.includes(entry.id)}">${icon('save')}Save word</button></div><div class="message" id="detailMessage" role="status" hidden></div>`;
+  if(entry.online){
+    body+='<p class="online-entry-note">Stored online result · '+esc(new Date(entry.fetchedAt).toLocaleDateString('en'))+'. Dictionary meanings and per-meaning translations are from Wiktionary.</p>';
+    if(entry.machineTranslation)body+=`<section class="online-translation"><span>Automatic ${entry.machineTranslation.language==='ur'?'Urdu':'English'} translation · MyMemory</span><p class="${entry.machineTranslation.language==='ur'?'ur':''}" dir="${entry.machineTranslation.language==='ur'?'rtl':'ltr'}" lang="${entry.machineTranslation.language}">${esc(entry.machineTranslation.text)}</p><small>Automatic translations may contain errors.</small></section>`;
+    else if(!ur)body+=`<button class="translate-button" data-translate="word" ${state.mode!=='online'?'disabled':''}>Translate word to Urdu</button>`;
+    if(state.mode!=='online')body+='<p class="fine">Switch to Online mode for new translations. This stored entry can be read offline.</p>';
+  }
   const examples=pairedExamples(entry), shown=new Set(examples.map(x=>exampleKey(x.urdu,x.english)));
+  if(entry.online)examples.forEach(x=>{shown.add(exampleKey(x.english,x.english));shown.add(exampleKey(x.urdu,''));});
   body+='<section class="word-examples" aria-labelledby="examplesHeading"><div class="examples-heading"><h3 id="examplesHeading">Example sentences</h3><span>URDU + ENGLISH</span></div>';
   if(examples.length){
     body+='<p class="examples-intro">See this word in context.</p>'+exampleCard(examples[0]);
     if(examples.length>1)body+=`<details class="more-examples"><summary>${examples.length-1} more ${examples.length===2?'example':'examples'}</summary>${examples.slice(1).map(exampleCard).join('')}</details>`;
+  }else if(entry.online){
+    const example=OnlineWords.example(entry);
+    if(example){shown.add(exampleKey(example.text,example.language==='en'?example.text:''));body+=`<article class="example-card"><span class="usage-label">${example.language==='ur'?'Urdu':'English'} source example</span><p class="${example.language==='ur'?'example-urdu ur':'example-english'}" dir="${example.language==='ur'?'rtl':'ltr'}" lang="${example.language}">${esc(example.text)}</p><button class="translate-button" data-translate="example" ${state.mode!=='online'?'disabled':''}>Add ${example.language==='ur'?'English':'Urdu'} translation</button><p class="fine">Optional automatic translation from MyMemory.</p></article>`;}
+    else body+='<p class="examples-unavailable">No usage example was returned for this word. Check Offline for the bundled examples.</p>';
   }else body+='<p class="examples-unavailable">An Urdu–English sentence pair is not yet available for this word in the offline collection. Meanings and any source examples are shown below.</p>';
   body+='</section><h3 class="meanings-heading">Meanings & usage</h3>';
   senses.forEach((sense,i)=>{
     body+=`<section class="sense"><div class="sense-label"><span class="sense-number">${i+1}</span><span>${esc(sense.pos || 'word')}</span>${sense.tags?.length?'<span>· '+esc(sense.tags.join(', '))+'</span>':''}${sense.source==='webster1913'?'<span>· Historical · 1913</span>':''}</div><p>${esc(sense.text)}</p>`;
+    if(sense.translations?.length)body+=`<p class="meaning-translation ${ur?'':'ur'}" lang="${ur?'en':'ur'}" dir="${ur?'ltr':'rtl'}">${esc(sense.translations.join(' · '))}</p>`;
     (sense.examples||[]).forEach(example=>{
       if(shown.has(exampleKey(example.text,example.english)))return;
       body+='<blockquote>';
@@ -162,7 +284,10 @@ function detail(entry) {
   });
   if(entry.synonyms?.length)body+='<h3 class="about-heading">Related words & synonyms</h3><div class="synonyms">'+entry.synonyms.map(word=>`<button data-search="${esc(word)}" class="${isUrdu(word)?'ur':''}" dir="auto">${esc(word)}</button>`).join('')+'</div>';
   body+='<div class="source-note">';
-  if(ur)body+=`Wiktionary contributors via Kaikki · CC BY-SA 4.0. <a href="https://en.wiktionary.org/wiki/${encodeURIComponent(entry.word)}#Urdu">Original entry & contributor history</a>`;
+  if(entry.online){
+    body+=`Wiktionary contributors via <a href="https://freedictionaryapi.com/">FreeDictionaryAPI.com</a> · <a href="${esc(entry.license.url)}">${esc(entry.license.name)}</a>. <a href="${esc(entry.sourceUrl)}">Original entry & contributor history</a>.`;
+    if(entry.limited)body+=' First 24 meanings shown; see the original entry for more.';
+  }else if(ur)body+=`Wiktionary contributors via Kaikki · CC BY-SA 4.0. <a href="https://en.wiktionary.org/wiki/${encodeURIComponent(entry.word)}#Urdu">Original entry & contributor history</a>`;
   else body+='English definitions from Open English WordNet and/or Webster’s 1913. Historical meanings are retained; see the info screen for source credits and notices.';
   body+='</div>';
   $('entryContent').innerHTML=body;updateSaveButtons();
@@ -172,7 +297,7 @@ function detail(entry) {
 window.DictionaryNative={
   onProgress(percent){$('progressBar').style.width=percent+'%';$('loadingText').textContent='Making '+percent+'% of your library ready. This only happens once.';},
   onReady(stats){
-    state.ready=true;state.stats=stats;$('loading').hidden=true;$('main').hidden=false;
+    state.ready=true;state.stats=stats;syncMode();
     $('headwordCount').textContent=number(stats.totalHeadwords)+' headwords, always with you';
     $('countSubtitle').textContent=number(stats.urduHeadwords)+' Urdu · '+number(stats.englishHeadwords)+' English';
     $('infoBilingual').textContent=number(stats.urduHeadwords);$('infoEnglish').textContent=number(stats.englishHeadwords);$('infoDefinitions').textContent=number(stats.definitions);
@@ -184,9 +309,9 @@ window.DictionaryNative={
       if(Array.isArray(old))state.saved=[...new Set([...old.filter(i=>Number.isInteger(i)&&stats.legacyIds[i]).map(i=>stats.legacyIds[i]),...state.saved])];
       write('dictionary.migrated.v2',true);
     }
-    const ids=[...new Set([...state.saved,...state.history])];
+    const ids=[...new Set([...state.saved,...state.history])].filter(id=>!id.startsWith('online:'));
     if(ids.length)DictionaryApi.summaries(JSON.stringify(ids),'restore');
-    persist();if(q.value.trim() || state.browse)search();else if(state.tab==='discover')showHome();else renderCollection();
+    persist();if(state.tab!=='discover')renderCollection();else if(state.mode==='offline'){if(q.value.trim()||state.browse)search();else showHome();}
   },
   onResults(token,items,more,offset){
     if(token!==state.queryToken)return;
@@ -205,7 +330,7 @@ window.DictionaryNative={
     state.currentEntry=entry;snapshot(entry);state.history=[entry.id,...state.history.filter(id=>id!==entry.id)].slice(0,50);persist();detail(entry);
     if(state.tab==='history')renderCollection();else if(state.tab==='discover'&&!q.value.trim()&&!state.browse)showHome();
   },
-  onSummaries(token,items){items.forEach(snapshot);persist();if(state.tab==='discover'&&!q.value.trim()&&!state.browse)showHome();else if(state.tab!=='discover')renderCollection();},
+  onSummaries(token,items){items.forEach(snapshot);persist();if(state.mode==='offline'&&state.tab==='discover'&&!q.value.trim()&&!state.browse)showHome();else if(state.tab!=='discover')renderCollection();},
   onError(token,text){
     if(token==='init'){$('loadingTitle').textContent='Your library needs another moment';$('loadingText').textContent=text;$('retryLoad').hidden=false;return;}
     if(token.startsWith('search')&&token!==state.queryToken)return;
@@ -231,7 +356,7 @@ function voice(button){
   if(!SR)return onAndroidSpeechResult('','Voice search is available through Android speech services in the app.');
   try{const recognition=new SR();recognition.lang=button.dataset.l;recognition.onresult=e=>onAndroidSpeechResult(e.results[0][0].transcript,'');recognition.onerror=()=>onAndroidSpeechResult('','Voice input could not finish. Please try again.');recognition.onend=()=>{if(activeMic)onAndroidSpeechResult('','');};recognition.start();}catch(_){onAndroidSpeechResult('','Voice input could not start.');}
 }
-q.oninput=()=>{state.browse=false;$('clearSearch').hidden=!q.value;clearTimeout(searchTimer);searchTimer=setTimeout(()=>search(),130);};
+q.oninput=()=>{state.browse=false;$('clearSearch').hidden=!q.value;clearTimeout(searchTimer);if(state.mode==='online'){cancelOnline();onlineIdle();}else searchTimer=setTimeout(()=>search(),130);};
 q.onkeydown=e=>{if(e.key==='Enter'){q.blur();search();}};
 $('clearSearch').onclick=()=>{q.value='';state.browse=false;search();q.focus();};
 $('themeButton').onclick=()=>{const dark=state.theme==='dark'||(state.theme==='system'&&matchMedia('(prefers-color-scheme:dark)').matches);state.theme=dark?'light':'dark';write('dictionary.theme',state.theme);applyTheme();};
@@ -241,10 +366,13 @@ $('browseAll').onclick=()=>{state.browse=true;search();};
 $('viewHistory').onclick=()=>setTab('history');
 $('loadMore').onclick=()=>search(false);
 $('retryLoad').onclick=()=>{$('retryLoad').hidden=true;DictionaryApi.init();};
+$('searchOnline').onclick=()=>onlineSearch();$('refreshOnline').onclick=()=>onlineSearch(true);
 $('mic').onclick=e=>{const button=e.target.closest('button[data-l]');if(button)voice(button);};
 document.addEventListener('click',e=>{
   const button=e.target.closest('button');if(!button)return;
   if(button.dataset.close)$(button.dataset.close).close();
+  else if(button.dataset.mode)setMode(button.dataset.mode);
+  else if(button.dataset.translate)translateOnline(button.dataset.translate);
   else if(button.dataset.tab)setTab(button.dataset.tab);
   else if(button.dataset.entry)openEntry(button.dataset.entry);
   else if(button.dataset.save)saveWord(button.dataset.save);
@@ -254,9 +382,10 @@ document.addEventListener('click',e=>{
   else if(button.dataset.theme){state.theme=button.dataset.theme;write('dictionary.theme',state.theme);applyTheme();}
 });
 document.querySelectorAll('dialog').forEach(dialog=>dialog.addEventListener('click',event=>{if(event.target===dialog){const r=dialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)dialog.close();}}));
-window.AppUi={back(){if($('entryDialog').open){$('entryDialog').close();return true;}if($('infoDialog').open){$('infoDialog').close();return true;}if(state.tab!=='discover'||q.value.trim()||state.browse){setTab('discover');return true;}return false;}};
+$('entryDialog').addEventListener('close',()=>{if(state.onlineAction?.kind!=='lookup')cancelOnline();});
+window.AppUi={back(){if($('entryDialog').open){cancelOnline();$('entryDialog').close();return true;}if($('infoDialog').open){$('infoDialog').close();return true;}if(state.tab!=='discover'||q.value.trim()||state.browse){setTab('discover');return true;}return false;}};
 const themeMedia=matchMedia('(prefers-color-scheme:dark)');if(themeMedia.addEventListener)themeMedia.addEventListener('change',applyTheme);
 $('exampleCredits').textContent=window.EXAMPLE_CREDITS||'';
 $('dataCredits').textContent=window.LICENSE_TEXT?.credits||'';$('englishLicense').textContent=window.LICENSE_TEXT?.english||'';$('fontLicense').textContent=window.LICENSE_TEXT?.font||'';
-applyTheme();persist();
+applyTheme();persist();syncMode();if(state.mode==='online')onlineIdle();
 if(window.DictionaryApi)DictionaryApi.init();else{$('loadingTitle').textContent='Your offline dictionary';$('loadingText').textContent='Open the Android app to explore the complete bundled library.';}

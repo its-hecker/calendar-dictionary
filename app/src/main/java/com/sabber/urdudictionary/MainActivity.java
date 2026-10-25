@@ -27,6 +27,7 @@ public class MainActivity extends OfflineActivity {
     private boolean recognizing;
     private String[] pendingSpeech;
     private DictionaryStore dictionary;
+    private OnlineLookup online;
 
     @Override
     protected void onCreate(Bundle state) {
@@ -55,6 +56,8 @@ public class MainActivity extends OfflineActivity {
         view.addJavascriptInterface(new VoiceBridge(), "AndroidVoice");
         dictionary = new DictionaryStore(this, this::evaluatePage);
         view.addJavascriptInterface(dictionary, "DictionaryApi");
+        online = new OnlineLookup(this::evaluatePage);
+        view.addJavascriptInterface(online, "OnlineApi");
     }
 
     private void message(String text) {
@@ -148,6 +151,8 @@ public class MainActivity extends OfflineActivity {
 
     @Override
     protected void onDestroy() {
+        if (web != null) web.removeJavascriptInterface("OnlineApi");
+        if (online != null) online.close();
         if (web != null) web.removeJavascriptInterface("DictionaryApi");
         if (dictionary != null) dictionary.close();
         pendingSpeech = null;

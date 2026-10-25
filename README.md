@@ -1,6 +1,22 @@
-# Urdu & English Dictionary 2.1
+# Urdu & English Dictionary 2.2
 
-Standalone offline Android app on the `dictionary` branch. Developed by **Sabber Kazmi**.
+Standalone Android dictionary with a bundled offline library and optional online lookup on the `dictionary` branch. Developed by **Sabber Kazmi**.
+
+## Optional online mode
+
+Use **Online lookup** above the search box, enter an English or Urdu word, then tap **Search online** or press Enter. Typing alone sends no request. **Offline library** remains the default and supports the existing English, Urdu and Roman Urdu search.
+
+Live meanings and available Urdu translations come from [FreeDictionaryAPI.com](https://freedictionaryapi.com/), using English Wiktionary data under CC BY-SA 4.0. Urdu queries return English glosses and available romanizations. Up to 24 meanings and available source usage examples are shown, with original-entry and license links. Coverage varies by word. Quoted literary passages are not imported into the online UI.
+
+**Translate word to Urdu** and **Add Urdu/English translation** are optional, separate actions using [MyMemory](https://mymemory.translated.net/doc/spec.php). Translations are labelled automatic and may contain errors. Only the selected word or example is submitted. The service limits a segment to 500 UTF-8 bytes and anonymous use to [5,000 characters per day](https://mymemory.translated.net/doc/usagelimits.php); quota or connection failures preserve the original text. No account, email or API key is embedded.
+
+Viewed online entries are stored on the device, including their source/license and any requested translations. **Refresh result** explicitly fetches a newer version. The most recent 20 unsaved online history entries are retained; up to 50 online entries can be pinned in Saved and opened without internet. Offline saved words share the existing collection and original IDs. Cache entries are separate from the bundled SQLite databases. Clearing app data/uninstalling removes the cache.
+
+An explicit new lookup/translation uses HTTPS with bounded response size and timeouts on a background worker. Switching modes, editing a pending search, or closing a translating entry cancels the request; stale callbacks are discarded. Provider failures show a message and allow Offline use; refreshing a cached word can fall back to its clearly labelled stored result. Online works while the offline library is preparing.
+
+The app now requests Android's normal **INTERNET** permission, with cleartext traffic disabled. The native bridge only calls the fixed dictionary/translation hosts. The local WebView still blocks remote page/network loads and general filesystem access. There are no automatic online requests in Offline mode; external source/Telegram links open only when tapped.
+
+Source/usage details are also under **Info → Online lookup & privacy**. Provider endpoints and response shapes were verified on 26 October 2026. Example test fixtures retain their original Wiktionary license/source metadata.
 
 ## The offline library
 
@@ -59,9 +75,9 @@ pathlib.Path("/tmp/examples.jsonl").write_text("\n".join(row[0] for row in con.e
 
 ## Offline behavior and storage
 
-Every data segment is inside the APK. There is no first-run download, server, API key or runtime internet permission. A background worker verifies and unpacks the bundled library once; the interface shows progress. The read-only SQLite database is approximately **190 MB** and the compressed data is **37.2 MB** (decimal). Indexed queries and small result pages keep the full library out of WebView memory. Search work runs off the UI thread; stale results are discarded.
+Every data segment is inside the APK. The bundled library needs no first-run download, server or API key. The optional online mode uses the INTERNET permission. A background worker verifies and unpacks the bundled library once; the interface shows progress. The read-only SQLite database is approximately **190 MB** and the compressed data is **37.2 MB** (decimal). Indexed queries and small result pages keep the full library out of WebView memory. Search work runs off the UI thread; stale results are discarded.
 
-Pronunciation depends on installed Android TTS voices; offline voices are preferred. Urdu retains the supplied Roman/Hindi fallback where that voice exists. The speech recognition provider owns microphone permission and may need internet access or downloaded language packs. The dictionary itself requests neither internet nor microphone permission.
+Pronunciation depends on installed Android TTS voices; offline voices are preferred. Urdu retains the supplied Roman/Hindi fallback where that voice exists. The speech recognition provider owns microphone permission and may need internet access or downloaded language packs. The dictionary requests INTERNET for optional online lookup; it does not request microphone permission itself.
 
 ## Install or build
 
