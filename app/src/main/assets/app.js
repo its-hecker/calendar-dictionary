@@ -102,7 +102,7 @@ function renderDayDetails(requestedId=''){
   body=`<h2 id="dayDialogTitle">${weekdays[selected.getDay()]}, ${selected.getDate()} ${MN[selected.getMonth()]}</h2>`+dateSummary;
   if(items.length){
    body+='<h3 class="detail-heading">Occasions on this date</h3>'+items.map(event=>`<button class="detail-related" data-show-event="${event.id}"><span><strong>${esc(event.title)}</strong><small>Open details</small></span>${icon('right')}</button>`).join('');
-  }else body+='<div class="no-occasion"><span>'+icon('calendar')+'</span><h3>No occasion listed</h3><p>This date has no occasion in SabCal’s current collection.</p></div>'+nextButton(nextOccasion(selected));
+  }else body+='<div class="no-occasion"><span>'+icon('calendar')+'</span><h3>No occasion listed</h3><p>This date has no occasion in Calendar’s current collection.</p></div>'+nextButton(nextOccasion(selected));
  }
  $('dayDialogContent').innerHTML=body;
 }

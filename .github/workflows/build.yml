@@ -36,8 +36,8 @@ jobs:
         run: |
           case "$APP_BRANCH" in
             calendar)
-              echo "APP_NAME=SabCal" >> "$GITHUB_ENV"
-              echo "APK_NAME=SabCal.apk" >> "$GITHUB_ENV"
+              echo "APP_NAME=Calendar" >> "$GITHUB_ENV"
+              echo "APK_NAME=Calendar.apk" >> "$GITHUB_ENV"
               ;;
             dictionary)
               echo "APP_NAME=Urdu Dictionary" >> "$GITHUB_ENV"

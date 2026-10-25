@@ -1,8 +1,10 @@
-# SabCal 2.2
+# Calendar 2.3
 
 Standalone offline calendar on the `calendar` branch. Developed by **Sabber Kazmi**.
 
 ## What's included
+
+- Calendar launcher name and a new blue/white adaptive icon, including a monochrome themed icon on Android 13+.
 
 - Monday-first weeks, with complete week rows in every month.
 - Today stays boldly filled when another date is selected; the selected date has a separate outline.
@@ -25,7 +27,7 @@ Hijri dates retain the supplied tabular Islamic calendar; the original occasion 
 
 ## Install or build
 
-Download **SabCal.apk** from [Releases](https://github.com/its-hecker/calendar-dictionary/releases). Android 10+ is required. The app ID stays `com.sabber.taqwim`, so preferences can migrate when updating with a compatible signing key; the launcher name is **SabCal**.
+Download **Calendar.apk** from [Releases](https://github.com/its-hecker/calendar-dictionary/releases). Android 10+ is required. The app ID stays `com.sabber.taqwim`, so preferences can migrate when updating with a compatible signing key; the launcher name is **Calendar**.
 
 ```sh
 ./gradlew :app:assembleDebug :app:lintDebug
