@@ -168,7 +168,7 @@ def build(lexicon, source_dir, out, export=None):
     assert database.execute('PRAGMA quick_check').fetchone()[0] == 'ok'
     database.close()
     dictionary.close()
-    compressed = out/'examples.db.gz'
+    compressed = out/'examples.gzpart'
     with compressed.open('wb') as output:
         with gzip.GzipFile(filename='', fileobj=output, mode='wb', compresslevel=9, mtime=0) as target:
             target.write(database_path.read_bytes())

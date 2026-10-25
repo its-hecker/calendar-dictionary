@@ -27,7 +27,7 @@ Wiktionary contributors via Kaikki: 905 paired usage examples.
 CC BY-SA 4.0; each example links to its entry and contributor history.
 22 original supplied examples and 199 additional original project sentence pairs are included.
 
-The full adapted example database is freely bundled as data/examples.db.gz.
+The full adapted example database is freely bundled as data/examples.gzpart.
 It is ordinary gzip-compressed SQLite, with full text and author/source attribution.
 See tools/build_examples.py and README for rebuilding or exporting plain JSONL.
 Source hashes are pinned in tools/example-sources.json.

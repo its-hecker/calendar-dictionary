@@ -11,7 +11,7 @@ import tempfile
 
 def verify(assets, lexicon=None):
     info = json.loads((assets/'examples-metadata.json').read_text())
-    compressed = (assets/'examples.db.gz').read_bytes()
+    compressed = (assets/'examples.gzpart').read_bytes()
     assert hashlib.sha256(compressed).hexdigest() == info['compressedSha256']
     data = gzip.decompress(compressed)
     assert len(data) == info['databaseBytes']

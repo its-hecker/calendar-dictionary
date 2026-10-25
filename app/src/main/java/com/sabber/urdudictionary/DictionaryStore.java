@@ -74,7 +74,7 @@ final class DictionaryStore implements AutoCloseable {
         if (examplesDatabase == null) {
             JSONObject info=assetJson("data/examples-metadata.json");
             File file=installDatabase("examples-v1",info,
-                    () -> context.getAssets().open("data/examples.db.gz"),false);
+                    () -> context.getAssets().open("data/examples.gzpart"),false);
             examplesDatabase=SQLiteDatabase.openDatabase(file.getPath(),null,
                     SQLiteDatabase.OPEN_READONLY|SQLiteDatabase.NO_LOCALIZED_COLLATORS);
             metadata.put("examples",info);

@@ -23,6 +23,8 @@ The APK bundles **4,609 sentence pairs for 11,983 headwords** (3,641 Urdu and 8,
 
 Examples combine 2,008 original FLORES-200 pairs (Meta AI / contributors, CC BY-SA 4.0), 1,475 Tatoeba pairs (CC BY 2.0 France, both authors and original sentence links retained), 905 existing Wiktionary pairs (CC BY-SA 4.0), the 22 supplied pairs and 199 additional original project pairs. The FLORES snapshot is the original publicly released 2022 dataset. These are bundled translations, with no runtime translation service. Full notices are readable under **Info → Example sentence sources & licenses**.
 
+The compressed database uses the `.gzpart` extension so Android packaging preserves its filename and bytes.
+
 The independent, read-only example database adds about 5.2 MB installed / 1.8 MB compressed. It is verified and unpacked by the same background installer as the dictionary; opening a word uses an indexed query. The existing definitions database and saved-word IDs are unchanged.
 
 To rebuild, download the exact files/URLs and hashes in `tools/example-sources.json` into a folder, retain their notices, then run:
@@ -31,7 +33,7 @@ To rebuild, download the exact files/URLs and hashes in `tools/example-sources.j
 python3 tools/build_examples.py --lexicon /tmp/lexicon/lexicon.db \
   --sources /path/to/source-files --out /tmp/examples \
   --export-jsonl /tmp/examples/examples.jsonl
-cp /tmp/examples/examples.db.gz /tmp/examples/examples-metadata.json app/src/main/assets/data/
+cp /tmp/examples/examples.gzpart /tmp/examples/examples-metadata.json app/src/main/assets/data/
 python3 tools/verify_lexicon.py
 ```
 
@@ -40,7 +42,7 @@ Tatoeba exports change weekly; rebuilding a later snapshot requires updating the
 ```python
 import gzip, sqlite3, pathlib
 p = pathlib.Path("/tmp/examples.db")
-p.write_bytes(gzip.decompress(pathlib.Path("app/src/main/assets/data/examples.db.gz").read_bytes()))
+p.write_bytes(gzip.decompress(pathlib.Path("app/src/main/assets/data/examples.gzpart").read_bytes()))
 con = sqlite3.connect(p)
 pathlib.Path("/tmp/examples.jsonl").write_text("\n".join(row[0] for row in con.execute("SELECT data FROM examples ORDER BY id")) + "\n")
 ```
@@ -72,7 +74,7 @@ python3 tools/verify_lexicon.py
 
 Requires Java 17, Android SDK platform 35 / build tools 34.0.0 and the included Gradle 8.9 wrapper. Windows: `gradlew.bat`.
 
-Each push builds the committed source, verifies every dictionary data segment, checks database integrity/counts and indexed lookups, checks page JavaScript, runs Android lint and publishes a debug-signed test prerelease. Manual builds are available through [Actions](https://github.com/its-hecker/calendar-dictionary/actions/workflows/build.yml) on `main`, selecting `dictionary`.
+Each push builds the committed source, verifies every dictionary data segment, checks database integrity/counts and indexed lookups, checks page JavaScript, runs Android lint, verifies the exact packaged assets and publishes a debug-signed test prerelease. Manual builds are available through [Actions](https://github.com/its-hecker/calendar-dictionary/actions/workflows/build.yml) on `main`, selecting `dictionary`.
 
 ## Sources and rebuilding the data
 
