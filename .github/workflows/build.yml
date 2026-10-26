@@ -77,6 +77,34 @@ jobs:
       - name: Build APK and run Android lint
         run: ./gradlew :app:assembleDebug :app:lintDebug --no-daemon --stacktrace --console=plain
 
+      - name: Enable emulator acceleration
+        if: env.APP_BRANCH == 'dictionary'
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Test online lookup in Android WebView
+        if: env.APP_BRANCH == 'dictionary'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          script: ./gradlew :app:connectedDebugAndroidTest --no-daemon --console=plain
+
+      - name: Upload Android test results
+        if: always() && env.APP_BRANCH == 'dictionary'
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: dictionary-device-tests
+          path: |
+            app/build/reports/androidTests/
+            app/build/outputs/androidTest-results/
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Verify packaged dictionary APK
         if: env.APP_BRANCH == 'dictionary'
         run: python3 tools/verify_apk.py app/build/outputs/apk/debug/app-debug.apk
