@@ -1,0 +1,83 @@
+{
+  "other": [
+    {
+      "partOfSpeech": "Noun",
+      "language": "Central Kurdish",
+      "definitions": [
+        {
+          "definition": "<a rel=\"mw:WikiLink\" href=\"/wiki/width\" title=\"width\">width</a>, <a rel=\"mw:WikiLink\" href=\"/wiki/breadth\" title=\"breadth\">breadth</a>"
+        }
+      ]
+    },
+    {
+      "partOfSpeech": "Noun",
+      "language": "Deccani",
+      "definitions": [
+        {
+          "definition": "<a rel=\"mw:WikiLink\" href=\"/wiki/water\" title=\"water\">water</a>"
+        }
+      ]
+    },
+    {
+      "partOfSpeech": "Noun",
+      "language": "Gojri",
+      "definitions": [
+        {
+          "definition": "<a rel=\"mw:WikiLink\" href=\"/wiki/water\" title=\"water\">water</a>, <a rel=\"mw:WikiLink\" href=\"/wiki/juice\" title=\"juice\">juice</a>"
+        },
+        {
+          "definition": "<a rel=\"mw:WikiLink\" href=\"/wiki/well\" title=\"well\">well</a>, <a rel=\"mw:WikiLink\" href=\"/wiki/tank\" title=\"tank\">tank</a>, <a rel=\"mw:WikiLink\" href=\"/wiki/river\" title=\"river\">river</a>, <a rel=\"mw:WikiLink\" href=\"/wiki/water\" title=\"water\">water</a> <a rel=\"mw:WikiLink\" href=\"/wiki/source\" title=\"source\">source</a>"
+        }
+      ]
+    },
+    {
+      "partOfSpeech": "Noun",
+      "language": "Pahari-Potwari",
+      "definitions": [
+        {
+          "definition": "<a rel=\"mw:WikiLink\" href=\"/wiki/water\" title=\"water\">water</a>"
+        },
+        {
+          "definition": "<span class=\"form-of-definition use-with-mention\" about=\"#mwt30\" typeof=\"mw:Transclusion\">alternative spelling of <span class=\"form-of-definition-link\"><i class=\"Aran mention\" lang=\"phr\"><a rel=\"mw:WikiLink\" href=\"/wiki/پانی#Pahari-Potwari\" class=\"mw-selflink-fragment\">پاݨی</a></i> <span class=\"mention-gloss-paren annotation-paren\">(</span><span lang=\"phr-Latn\" class=\"mention-tr tr Latn\">pāṇī</span><span class=\"mention-gloss-paren annotation-paren\">)</span></span></span><link rel=\"mw:PageProp/Category\" href=\"./Category:Forms_linking_to_themselves#پانی\" about=\"#mwt30\">"
+        }
+      ]
+    }
+  ],
+  "pa": [
+    {
+      "partOfSpeech": "Noun",
+      "language": "Punjabi",
+      "definitions": [
+        {
+          "definition": "<a rel=\"mw:WikiLink\" href=\"/wiki/water\" title=\"water\">water</a>"
+        },
+        {
+          "definition": "<span class=\"usage-label-sense\" about=\"#mwt42\" typeof=\"mw:Transclusion\"></span> <a rel=\"mw:WikiLink\" href=\"/wiki/rain\" title=\"rain\">rain</a>, <a rel=\"mw:WikiLink\" href=\"/wiki/rainwater\" title=\"rainwater\">rainwater</a>"
+        }
+      ]
+    }
+  ],
+  "ur": [
+    {
+      "partOfSpeech": "Noun",
+      "language": "Urdu",
+      "definitions": [
+        {
+          "definition": "<a rel=\"mw:WikiLink\" href=\"/wiki/water\" title=\"water\">water</a>"
+        },
+        {
+          "definition": "<span class=\"usage-label-sense\" about=\"#mwt64\" typeof=\"mw:Transclusion\"></span> <a rel=\"mw:WikiLink\" href=\"/wiki/rain\" title=\"rain\">rain</a>, <a rel=\"mw:WikiLink\" href=\"/wiki/monsoon\" title=\"monsoon\">monsoon</a>"
+        },
+        {
+          "definition": "<span class=\"usage-label-sense\" about=\"#mwt65\" typeof=\"mw:Transclusion\"></span> <a rel=\"mw:WikiLink\" href=\"/wiki/tear\" title=\"tear\">tear</a>, <a rel=\"mw:WikiLink\" href=\"/wiki/sweat\" title=\"sweat\">sweat</a>"
+        },
+        {
+          "definition": "<span class=\"usage-label-sense\" about=\"#mwt66\" typeof=\"mw:Transclusion\"></span> <a rel=\"mw:WikiLink\" href=\"/wiki/alcohol\" title=\"alcohol\">alcohol</a>"
+        },
+        {
+          "definition": "<span class=\"usage-label-sense\" about=\"#mwt67\" typeof=\"mw:Transclusion\"></span> <i about=\"#mwt68\" typeof=\"mw:Transclusion\">This term needs a translation to English. Please help out and <b>add a translation</b>, then remove the text <code style=\"white-space:pre-wrap\"><span typeof=\"mw:Entity\">{</span><span typeof=\"mw:Entity\">{</span><a rel=\"mw:WikiLink\" href=\"/wiki/Template:rfdef#top\" title=\"Template:rfdef\">rfdef</a><span typeof=\"mw:Entity\">}</span><span typeof=\"mw:Entity\">}</span></code>.</i><link rel=\"mw:PageProp/Category\" href=\"./Category:Requests_for_definitions_in_Urdu_entries#پانی\" about=\"#mwt68\">"
+        }
+      ]
+    }
+  ]
+}

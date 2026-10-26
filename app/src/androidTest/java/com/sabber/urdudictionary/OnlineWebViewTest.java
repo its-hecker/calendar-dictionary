@@ -44,7 +44,7 @@ public class OnlineWebViewTest {
         instrumentation.runOnMainSync(() -> web=findWeb(activity.findViewById(android.R.id.content)));
         assertNotNull(web);
         waitFor("typeof onlineSearch==='function'",15000);
-        js("window.__smokeError='';window.addEventListener('error',e=>window.__smokeError=e.message);setMode('online');");
+        js("state.onlineEntries={};state.history=state.history.filter(id=>!id.startsWith('online:'));persist();window.__smokeError='';window.addEventListener('error',e=>window.__smokeError=e.message);setMode('online');");
     }
     @After public void finish() { if (activity!=null) instrumentation.runOnMainSync(() -> activity.finish()); }
     private String js(String script) throws Exception {

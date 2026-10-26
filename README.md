@@ -1,4 +1,4 @@
-# Urdu & English Dictionary 2.2
+# Urdu & English Dictionary 2.3
 
 Standalone Android dictionary with a bundled offline library and optional online lookup on the `dictionary` branch. Developed by **Sabber Kazmi**.
 
@@ -6,13 +6,15 @@ Standalone Android dictionary with a bundled offline library and optional online
 
 Use **Online lookup** above the search box, enter an English or Urdu word, then tap **Search online** or press Enter. Typing alone sends no request. **Offline library** remains the default and supports the existing English, Urdu and Roman Urdu search.
 
-Live meanings and available Urdu translations come from [FreeDictionaryAPI.com](https://freedictionaryapi.com/), using English Wiktionary data under CC BY-SA 4.0. Urdu queries return English glosses and available romanizations. Up to 24 meanings and available source usage examples are shown, with original-entry and license links. Coverage varies by word. Quoted literary passages are not imported into the online UI.
+Version 2.3 fixes capitalized searches such as **Hello** (the provider returns an empty entry for that spelling), adds a second independent dictionary host, and prevents requests from leaving the search button stuck. Exact case is tried first, so acronyms and names still work; lowercase is retried only when there is no exact meaning.
+
+Live meanings and available Urdu translations come from [FreeDictionaryAPI.com](https://freedictionaryapi.com/), using English Wiktionary data under CC BY-SA 4.0. If that service is unreachable, blocked, malformed or has no matching meanings, the app tries the [Wiktionary definition API](https://en.wiktionary.org/api/rest_v1/page/definition/hello) directly for both English and Urdu. The source shown on each result identifies the actual provider. Backup definitions and examples are converted to plain text; remote HTML is never displayed. Urdu queries return English glosses and available romanizations. Up to 24 meanings and available source usage examples are shown, with original-entry and license links. Coverage varies by word. Quoted literary passages are not imported into the online UI.
 
 **Translate word to Urdu** and **Add Urdu/English translation** are optional, separate actions using [MyMemory](https://mymemory.translated.net/doc/spec.php). Translations are labelled automatic and may contain errors. Only the selected word or example is submitted. The service limits a segment to 500 UTF-8 bytes and anonymous use to [5,000 characters per day](https://mymemory.translated.net/doc/usagelimits.php); quota or connection failures preserve the original text. No account, email or API key is embedded.
 
 Viewed online entries are stored on the device, including their source/license and any requested translations. **Refresh result** explicitly fetches a newer version. The most recent 20 unsaved online history entries are retained; up to 50 online entries can be pinned in Saved and opened without internet. Offline saved words share the existing collection and original IDs. Cache entries are separate from the bundled SQLite databases. Clearing app data/uninstalling removes the cache.
 
-An explicit new lookup/translation uses HTTPS with bounded response size and timeouts on a background worker. Switching modes, editing a pending search, or closing a translating entry cancels the request; stale callbacks are discarded. Provider failures show a message and allow Offline use; refreshing a cached word can fall back to its clearly labelled stored result. Online works while the offline library is preparing.
+An explicit new lookup/translation uses HTTPS with bounded response size and a 30-second overall lookup deadline on a background worker. Socket disconnection runs separately from the JavaScript bridge to keep controls responsive; a 40-second UI timeout restores retry controls even if Android never delivers a callback. Switching modes, editing a pending search, or closing a translating entry cancels the request; stale callbacks are discarded. Provider failures show a message and allow Offline use; refreshing a cached word can fall back to its clearly labelled stored result. Online works while the offline library is preparing.
 
 The app now requests Android's normal **INTERNET** permission, with cleartext traffic disabled. The native bridge only calls the fixed dictionary/translation hosts. The local WebView still blocks remote page/network loads and general filesystem access. There are no automatic online requests in Offline mode; external source/Telegram links open only when tapped.
 
@@ -90,7 +92,7 @@ python3 tools/verify_lexicon.py
 
 Requires Java 17, Android SDK platform 35 / build tools 34.0.0 and the included Gradle 8.9 wrapper. Windows: `gradlew.bat`.
 
-Each push builds the committed source, verifies every dictionary data segment, checks database integrity/counts and indexed lookups, checks page JavaScript, runs Android lint, verifies the exact packaged assets and publishes a debug-signed test prerelease. Manual builds are available through [Actions](https://github.com/its-hecker/calendar-dictionary/actions/workflows/build.yml) on `main`, selecting `dictionary`.
+Each push builds the committed source, verifies every dictionary data segment, checks database integrity/counts and indexed lookups, checks page JavaScript, runs Android lint and real HTTPS/WebView instrumentation tests in an Android 15 emulator, verifies the exact packaged assets and publishes a debug-signed test prerelease. Manual builds are available through [Actions](https://github.com/its-hecker/calendar-dictionary/actions/workflows/build.yml) on `main`, selecting `dictionary`.
 
 ## Sources and rebuilding the data
 

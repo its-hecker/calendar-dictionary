@@ -1,12 +1,17 @@
 package com.sabber.urdudictionary;
 
 import android.webkit.JavascriptInterface;
+import android.text.Html;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -14,13 +19,15 @@ import java.util.concurrent.atomic.AtomicLong;
 import javax.net.ssl.HttpsURLConnection;
 
 /** Opt-in, bounded HTTPS requests. Remote pages never enter the bridged WebView. */
-final class OnlineLookup implements AutoCloseable {
+public class OnlineLookup implements AutoCloseable {
     private final DictionaryStore.PageCallback page;
     private final ExecutorService worker=Executors.newSingleThreadExecutor();
+    private final ExecutorService cancellations=Executors.newSingleThreadExecutor();
     private final AtomicLong generation=new AtomicLong();
     private volatile HttpsURLConnection connection;
     private volatile boolean closed;
     private Future<?> pending;
+    private volatile long deadline;
 
     OnlineLookup(DictionaryStore.PageCallback page) { this.page=page; }
 
@@ -35,12 +42,19 @@ final class OnlineLookup implements AutoCloseable {
     public synchronized void cancel() {
         generation.incrementAndGet();
         HttpsURLConnection active=connection;
-        if (active!=null) active.disconnect();
+        connection=null;
+        // A disconnect can wait for Android's socket lock; never do that on the JS bridge thread.
+        if (active!=null && !cancellations.isShutdown()) cancellations.execute(active::disconnect);
         if (pending!=null) pending.cancel(true);
     }
 
     private boolean validToken(String token) { return token!=null && token.matches("[a-z0-9-]{1,80}"); }
     private String encode(String value) { return android.net.Uri.encode(value); }
+
+    private void checkCurrent(long request) throws IOException {
+        if (closed || generation.get()!=request || Thread.currentThread().isInterrupted()) throw new IOException("Cancelled");
+        if (deadline>0 && System.nanoTime()>deadline) throw new SocketTimeoutException("Lookup timed out");
+    }
 
     @JavascriptInterface
     public synchronized void lookup(String query,String language,String token) {
@@ -52,12 +66,109 @@ final class OnlineLookup implements AutoCloseable {
             reply(request,"onError",token,"Enter an English or Urdu word, up to 80 characters.");
             return;
         }
-        final String url="https://freedictionaryapi.com/api/v1/entries/"+language+"/"+encode(query.trim())+"?translations=true";
+        deadline=System.nanoTime()+java.util.concurrent.TimeUnit.SECONDS.toNanos(30);
         pending=worker.submit(() -> {
-            try { reply(request,"onLookup",token,get(url,request)); }
+            try { reply(request,"onLookup",token,lookupEntry(query.trim(),language,request,token)); }
             catch (ProviderError error) { reply(request,"onError",token,error.getMessage()); }
-            catch (Exception error) { reply(request,"onError",token,"Could not reach the online dictionary. Check your connection or use Offline."); }
+            catch (Exception error) { reply(request,"onError",token,"Online lookup failed: "+reason(error)+". Check your connection or use Offline."); }
         });
+    }
+
+    /** Also exercised with controlled failures by the on-device regression tests. */
+    JSONObject lookupEntry(String query,String language,long request,String token) throws Exception {
+        String lower=query.toLowerCase(Locale.ROOT);
+        String[] spellings="en".equals(language)&&!lower.equals(query)?new String[]{query,lower}:new String[]{query};
+        Exception first=null,last=null;
+        boolean onlyMissing=true;
+        for (String spelling:spellings) {
+            try {
+                JSONObject result=get("https://freedictionaryapi.com/api/v1/entries/"+language+"/"+encode(spelling)+"?translations=true",request);
+                if (hasMeanings(result,language)) return result;
+                last=new ProviderError("No matching entry",true);
+            } catch (Exception error) {
+                checkCurrent(request);last=error;
+                if (!(error instanceof ProviderError && ((ProviderError)error).missing)) { onlyMissing=false;break; }
+            }
+        }
+        first=last;
+        reply(request,"onStatus",token,"Trying the backup dictionary…");
+        for (String spelling:spellings) {
+            try {
+                JSONObject result=fromWiktionary(get("https://en.wiktionary.org/api/rest_v1/page/definition/"+encode(spelling),request),spelling,language);
+                if (hasMeanings(result,language)) return result;
+                last=new ProviderError("No matching entry",true);
+            } catch (Exception error) {
+                checkCurrent(request);last=error;
+                if (!(error instanceof ProviderError && ((ProviderError)error).missing)) { onlyMissing=false;break; }
+            }
+        }
+        if (onlyMissing) throw new ProviderError("No online entry was found. Try another spelling or search the offline library.",true);
+        throw new ProviderError("Could not load either online dictionary. FreeDictionaryAPI: "+reason(first)+"; Wiktionary: "+reason(last)+". Retry or use Offline.");
+    }
+
+    private static boolean hasDefinitions(JSONArray senses,int depth) {
+        if (senses==null || depth>3) return false;
+        for (int i=0;i<senses.length();i++) {
+            JSONObject sense=senses.optJSONObject(i);
+            if (sense!=null && (!sense.optString("definition").trim().isEmpty() || hasDefinitions(sense.optJSONArray("subsenses"),depth+1))) return true;
+        }
+        return false;
+    }
+
+    private static boolean hasMeanings(JSONObject result,String language) {
+        JSONArray entries=result.optJSONArray("entries");
+        if (entries==null) return false;
+        for (int i=0;i<entries.length();i++) {
+            JSONObject entry=entries.optJSONObject(i);
+            JSONObject lang=entry==null?null:entry.optJSONObject("language");
+            if (lang!=null && language.equals(lang.optString("code")) && hasDefinitions(entry.optJSONArray("senses"),0)) return true;
+        }
+        return false;
+    }
+
+    private static String plain(String html) {
+        // Html.fromHtml produces text only and does not fetch or execute remote content.
+        return Html.fromHtml(html,Html.FROM_HTML_MODE_LEGACY).toString().replaceAll("\\s+"," ").trim();
+    }
+
+    static JSONObject fromWiktionary(JSONObject payload,String word,String language) throws Exception {
+        JSONArray entries=new JSONArray();
+        java.util.Iterator<String> keys=payload.keys();
+        while (keys.hasNext()) {
+            JSONArray group=payload.optJSONArray(keys.next());
+            if (group==null) continue;
+            for (int i=0;i<group.length();i++) {
+                JSONObject item=group.optJSONObject(i);
+                String name=item==null?"":item.optString("language");
+                if (!("en".equals(language)?"English":"Urdu").equalsIgnoreCase(name)) continue;
+                JSONArray definitions=item.optJSONArray("definitions"),senses=new JSONArray();
+                if (definitions!=null) for (int n=0;n<definitions.length() && n<48;n++) {
+                    JSONObject definition=definitions.optJSONObject(n);
+                    if (definition==null) continue;
+                    String text=plain(definition.optString("definition"));
+                    if (text.isEmpty()) continue;
+                    JSONArray examples=new JSONArray(),raw=definition.optJSONArray("examples");
+                    if (raw!=null) for (int e=0;e<raw.length() && e<2;e++) {
+                        String example=plain(raw.optString(e));
+                        if (!example.isEmpty()) examples.put(example);
+                    }
+                    senses.put(new JSONObject().put("definition",text).put("examples",examples));
+                }
+                entries.put(new JSONObject().put("language",new JSONObject().put("code",language).put("name",name))
+                        .put("partOfSpeech",item.optString("partOfSpeech")).put("senses",senses));
+            }
+        }
+        return new JSONObject().put("word",word).put("entries",entries).put("source",new JSONObject()
+                .put("provider","Wiktionary").put("url","https://en.wiktionary.org/wiki/"+android.net.Uri.encode(word)+("ur".equals(language)?"#Urdu":"#English"))
+                .put("license",new JSONObject().put("name","CC BY-SA 4.0").put("url","https://creativecommons.org/licenses/by-sa/4.0/")));
+    }
+
+    private static String reason(Exception error) {
+        if (error instanceof SocketTimeoutException) return "connection timed out";
+        if (error instanceof UnknownHostException) return "address could not be resolved";
+        if (error instanceof javax.net.ssl.SSLException) return "secure connection failed; check the device date and network";
+        if (error instanceof ProviderError) return error.getMessage();
+        return "connection failed";
     }
 
     @JavascriptInterface
@@ -72,6 +183,7 @@ final class OnlineLookup implements AutoCloseable {
         }
         final String pair="en".equals(language)?"en|ur":"ur|en";
         final String url="https://api.mymemory.translated.net/get?q="+encode(text)+"&langpair="+encode(pair);
+        deadline=System.nanoTime()+java.util.concurrent.TimeUnit.SECONDS.toNanos(20);
         pending=worker.submit(() -> {
             try {
                 JSONObject result=get(url,request);
@@ -89,27 +201,32 @@ final class OnlineLookup implements AutoCloseable {
         });
     }
 
-    private JSONObject get(String address,long request) throws Exception {
-        if (closed || generation.get()!=request || Thread.currentThread().isInterrupted()) throw new IOException("Cancelled");
+    JSONObject get(String address,long request) throws Exception {
+        checkCurrent(request);
         URL url=new URL(address);
         if (!"https".equals(url.getProtocol()) || !("freedictionaryapi.com".equals(url.getHost())
-                || "api.mymemory.translated.net".equals(url.getHost()))) throw new IOException("Unsupported endpoint");
+                || "en.wiktionary.org".equals(url.getHost()) || "api.mymemory.translated.net".equals(url.getHost()))) throw new IOException("Unsupported endpoint");
         HttpsURLConnection active=(HttpsURLConnection)url.openConnection();
         connection=active;
         try {
-            active.setConnectTimeout(8000);
-            active.setReadTimeout(12000);
+            int remaining=deadline>0?(int)Math.max(1,java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(deadline-System.nanoTime())):12000;
+            active.setConnectTimeout(Math.min(5000,remaining));
+            active.setReadTimeout(Math.min(7000,remaining));
             active.setInstanceFollowRedirects(false);
             active.setRequestProperty("Accept","application/json");
-            active.setRequestProperty("User-Agent","UrduDictionary/2.2 (Android; https://github.com/its-hecker/calendar-dictionary)");
+            active.setRequestProperty("User-Agent","UrduDictionary/2.3 (Android; https://github.com/its-hecker/calendar-dictionary)");
+            checkCurrent(request);
             int code=active.getResponseCode();
-            if (code==404) throw new ProviderError("No online entry was found. Try another spelling or search the offline library.");
+            checkCurrent(request);
+            if (code==404) throw new ProviderError("No matching entry",true);
             if (code==429) throw new ProviderError("The online service is busy or has reached its usage limit. Try again later or use Offline.");
-            if (code!=200) throw new ProviderError("The online service is unavailable right now. Try again later or use Offline.");
+            if (code!=200) throw new ProviderError("HTTP "+code);
+            String contentType=active.getContentType();
+            if (contentType!=null && !contentType.toLowerCase(Locale.ROOT).contains("json")) throw new ProviderError("The service returned a web page instead of dictionary data");
             try (InputStream input=active.getInputStream(); ByteArrayOutputStream bytes=new ByteArrayOutputStream()) {
                 byte[] buffer=new byte[8192];int count;
                 while ((count=input.read(buffer))!=-1) {
-                    if (closed || generation.get()!=request || Thread.currentThread().isInterrupted()) throw new IOException("Cancelled");
+                    checkCurrent(request);
                     if (bytes.size()+count>1048576) throw new ProviderError("This entry is too large to load. Try a more specific word or use Offline.");
                     bytes.write(buffer,0,count);
                 }
@@ -122,11 +239,13 @@ final class OnlineLookup implements AutoCloseable {
     }
 
     private static final class ProviderError extends Exception {
-        ProviderError(String message) { super(message); }
+        final boolean missing;
+        ProviderError(String message) { this(message,false); }
+        ProviderError(String message,boolean missing) { super(message);this.missing=missing; }
     }
 
     @Override
     public synchronized void close() {
-        closed=true;cancel();worker.shutdownNow();
+        closed=true;cancel();worker.shutdownNow();cancellations.shutdown();
     }
 }

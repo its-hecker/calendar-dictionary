@@ -122,7 +122,7 @@ jobs:
 
           Android 10 or newer. Install $APK_NAME; the other app is installed separately.
           Updated interface, developer info and Telegram channel.
-          Dictionary 2.2 adds optional English/Urdu online lookup and on-demand automatic translations.
+          Dictionary 2.3 fixes capitalized online searches, adds a backup dictionary service and restores retry controls on timeouts.
           This is a debug-signed test APK. The bundled library works offline; online lookup requires internet.
           Dictionary speech depends on installed Android voices and a speech recognition provider.
           EOF

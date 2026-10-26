@@ -16,7 +16,7 @@ const state={ready:false,stats:null,tab:'discover',filter:'all',browse:false,ite
 if(!state.onlineEntries||typeof state.onlineEntries!=='object'||Array.isArray(state.onlineEntries))state.onlineEntries={};
 Object.keys(state.onlineEntries).forEach(id=>{const e=state.onlineEntries[id];if(!id.startsWith('online:')||!e?.online||e.id!==id||!Array.isArray(e.senses)||!Number.isFinite(e.fetchedAt)||typeof e.word!=='string')delete state.onlineEntries[id];});
 const q=$('q');
-let searchTimer,toastTimer,activeMic=null;
+let searchTimer,toastTimer,onlineTimer,activeMic=null;
 const number = n => new Intl.NumberFormat('en').format(n);
 function msg(text) { $('msg').textContent=text||''; $('msg').hidden=!text; const box=$('detailMessage');if(box){box.textContent=text||'';box.hidden=!text;} }
 function toast(text) { $('toast').textContent=text; $('toast').hidden=false; clearTimeout(toastTimer); toastTimer=setTimeout(()=>{$('toast').hidden=true;},1800); }
@@ -133,10 +133,15 @@ function syncMode(){
   $('main').hidden=!state.ready&&!online&&state.tab==='discover';
 }
 function cancelOnline(){
+  clearTimeout(onlineTimer);
   state.onlineToken='';state.onlineAction=null;
-  if(window.OnlineApi)OnlineApi.cancel();
+  try{if(window.OnlineApi)OnlineApi.cancel();}catch(_){}
   $('searchOnline').disabled=false;
   document.querySelectorAll('[data-translate]').forEach(b=>{b.disabled=state.mode!=='online';});
+}
+function watchOnline(token){
+  clearTimeout(onlineTimer);
+  onlineTimer=setTimeout(()=>{if(token===state.onlineToken)OnlineNative.onError(token,'The online service did not respond in time. Tap Search to retry, or use Offline.');},40000);
 }
 function setMode(mode){
   cancelOnline();clearTimeout(searchTimer);state.queryToken='';state.entryToken='';state.mode=mode==='online'?'online':'offline';
@@ -172,7 +177,8 @@ function onlineSearch(refresh=false){
   const token='online-'+(++state.request);state.onlineToken=token;state.onlineAction={kind:'lookup',query};
   showList('Online lookup');$('results').innerHTML='';$('listMeta').textContent='Looking up your word…';$('loadMore').hidden=true;$('refreshOnline').hidden=true;
   $('onlineStatus').textContent='Contacting the online dictionary…';$('searchOnline').disabled=true;
-  OnlineApi.lookup(query,OnlineWords.language(query),token);
+  watchOnline(token);
+  try{OnlineApi.lookup(query,OnlineWords.language(query),token);}catch(_){OnlineNative.onError(token,'Android online lookup could not start. Restart the app and try again.');}
 }
 function translateOnline(kind){
   const entry=state.currentEntry;if(!entry?.online||state.mode!=='online')return;
@@ -182,9 +188,11 @@ function translateOnline(kind){
   state.onlineToken=token;state.onlineAction={kind,entryId:entry.id,original};
   document.querySelectorAll('[data-translate]').forEach(b=>{b.disabled=true;});
   msg('Translating '+(kind==='word'?'the word':'the example')+'…');
-  OnlineApi.translate(original.text,original.language,token);
+  watchOnline(token);
+  try{OnlineApi.translate(original.text,original.language,token);}catch(_){OnlineNative.onError(token,'Android translation could not start. Restart the app and try again.');}
 }
 window.OnlineNative={
+  onStatus(token,text){if(token===state.onlineToken&&state.mode==='online')$('onlineStatus').textContent=text;},
   onLookup(token,payload){
     if(token!==state.onlineToken||state.mode!=='online')return;
     const action=state.onlineAction;cancelOnline();
@@ -285,7 +293,8 @@ function detail(entry) {
   if(entry.synonyms?.length)body+='<h3 class="about-heading">Related words & synonyms</h3><div class="synonyms">'+entry.synonyms.map(word=>`<button data-search="${esc(word)}" class="${isUrdu(word)?'ur':''}" dir="auto">${esc(word)}</button>`).join('')+'</div>';
   body+='<div class="source-note">';
   if(entry.online){
-    body+=`Wiktionary contributors via <a href="https://freedictionaryapi.com/">FreeDictionaryAPI.com</a> · <a href="${esc(entry.license.url)}">${esc(entry.license.name)}</a>. <a href="${esc(entry.sourceUrl)}">Original entry & contributor history</a>.`;
+    const provider=entry.provider==='Wiktionary'?'Wiktionary':'FreeDictionaryAPI.com';
+    body+=`Wiktionary contributors via <a href="${provider==='Wiktionary'?'https://en.wiktionary.org/':'https://freedictionaryapi.com/'}">${provider}</a> · <a href="${esc(entry.license.url)}">${esc(entry.license.name)}</a>. <a href="${esc(entry.sourceUrl)}">Original entry & contributor history</a>.`;
     if(entry.limited)body+=' First 24 meanings shown; see the original entry for more.';
   }else if(ur)body+=`Wiktionary contributors via Kaikki · CC BY-SA 4.0. <a href="https://en.wiktionary.org/wiki/${encodeURIComponent(entry.word)}#Urdu">Original entry & contributor history</a>`;
   else body+='English definitions from Open English WordNet and/or Webster’s 1913. Historical meanings are retained; see the info screen for source credits and notices.';

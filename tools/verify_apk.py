@@ -18,5 +18,5 @@ with zipfile.ZipFile(sys.argv[1]) as apk:
         checked += 1
     dex = b''.join(apk.read(name) for name in names if name.endswith('.dex'))
     assert b'bilingualExamples' in dex and b'examples-v1' in dex
-    assert b'OnlineApi' in dex and b'freedictionaryapi.com' in dex and b'api.mymemory.translated.net' in dex
+    assert b'OnlineApi' in dex and b'freedictionaryapi.com' in dex and b'en.wiktionary.org' in dex and b'api.mymemory.translated.net' in dex
 print(f'Verified {checked} packaged assets byte for byte, including the compressed example database and native examples bridge.')

@@ -1,0 +1,119 @@
+{
+  "en": [
+    {
+      "partOfSpeech": "Interjection",
+      "language": "English",
+      "definitions": [
+        {
+          "definition": "<span class=\"use-with-mention\" about=\"#mwt71\" typeof=\"mw:Transclusion\">A <a rel=\"mw:WikiLink\" href=\"/wiki/greeting#English\" title=\"greeting\">greeting</a> (<a rel=\"mw:WikiLink\" href=\"/wiki/salutation#English\" title=\"salutation\">salutation</a>) said when <a rel=\"mw:WikiLink\" href=\"/wiki/meet#English\" title=\"meet\">meeting</a> someone or <a rel=\"mw:WikiLink\" href=\"/wiki/acknowledge#English\" title=\"acknowledge\">acknowledging</a> someone’s <a rel=\"mw:WikiLink\" href=\"/wiki/arrival#English\" title=\"arrival\">arrival</a> or <a rel=\"mw:WikiLink\" href=\"/wiki/presence#English\" title=\"presence\">presence</a>.</span>",
+          "parsedExamples": [
+            {
+              "example": "<b>Hello</b>, everyone."
+            }
+          ],
+          "examples": [
+            "<b>Hello</b>, everyone."
+          ]
+        },
+        {
+          "definition": "<span class=\"use-with-mention\" about=\"#mwt75\" typeof=\"mw:Transclusion\">A greeting used when <a rel=\"mw:WikiLink\" href=\"/wiki/answer#English\" title=\"answer\">answering</a> the <a rel=\"mw:WikiLink\" href=\"/wiki/telephone#English\" title=\"telephone\">telephone</a>.</span>",
+          "parsedExamples": [
+            {
+              "example": "<b>Hello</b><span typeof=\"mw:Entity\">?</span> How may I help you<span typeof=\"mw:Entity\">?</span>"
+            }
+          ],
+          "examples": [
+            "<b>Hello</b><span typeof=\"mw:Entity\">?</span> How may I help you<span typeof=\"mw:Entity\">?</span>"
+          ]
+        },
+        {
+          "definition": "<span class=\"use-with-mention\" about=\"#mwt77\" typeof=\"mw:Transclusion\">A call for <a rel=\"mw:WikiLink\" href=\"/wiki/response#English\" title=\"response\">response</a> if it is not clear if anyone is present or listening, or if a telephone conversation may have been <a rel=\"mw:WikiLink\" href=\"/wiki/disconnect#English\" title=\"disconnect\">disconnected</a>.</span>",
+          "parsedExamples": [
+            {
+              "example": "<b>Hello</b><span typeof=\"mw:Entity\">?</span> Is anyone there<span typeof=\"mw:Entity\">?</span>"
+            }
+          ],
+          "examples": [
+            "<b>Hello</b><span typeof=\"mw:Entity\">?</span> Is anyone there<span typeof=\"mw:Entity\">?</span>"
+          ]
+        },
+        {
+          "definition": "<span class=\"usage-label-sense\" about=\"#mwt80\" typeof=\"mw:Transclusion\"></span> <span class=\"use-with-mention\" about=\"#mwt81\" typeof=\"mw:Transclusion\">Used <a rel=\"mw:WikiLink\" href=\"/wiki/sarcastic#English\" title=\"sarcastic\">sarcastically</a> to imply that the person addressed has done something the speaker considers to be <a rel=\"mw:WikiLink\" href=\"/wiki/foolish#English\" title=\"foolish\">foolish</a>, or missed something that should have been <a rel=\"mw:WikiLink\" href=\"/wiki/obvious#English\" title=\"obvious\">obvious</a>.</span>",
+          "parsedExamples": [
+            {
+              "example": "You just tried to start your car with your cell phone. <b>Hello</b><span typeof=\"mw:Entity\">?</span>"
+            }
+          ],
+          "examples": [
+            "You just tried to start your car with your cell phone. <b>Hello</b><span typeof=\"mw:Entity\">?</span>"
+          ]
+        },
+        {
+          "definition": "<span class=\"usage-label-sense\" about=\"#mwt85\" typeof=\"mw:Transclusion\"></span> <span class=\"use-with-mention\" about=\"#mwt86\" typeof=\"mw:Transclusion\">An expression of <a rel=\"mw:WikiLink\" href=\"/wiki/puzzlement#English\" title=\"puzzlement\">puzzlement</a> or <a rel=\"mw:WikiLink\" href=\"/wiki/discovery#English\" title=\"discovery\">discovery</a>.</span>",
+          "parsedExamples": [
+            {
+              "example": "<b>Hello</b><span typeof=\"mw:Entity\">!</span> What’s going on here<span typeof=\"mw:Entity\">?</span>"
+            }
+          ],
+          "examples": [
+            "<b>Hello</b><span typeof=\"mw:Entity\">!</span> What’s going on here<span typeof=\"mw:Entity\">?</span>"
+          ]
+        }
+      ]
+    },
+    {
+      "partOfSpeech": "Noun",
+      "language": "English",
+      "definitions": [
+        {
+          "definition": "\"<a rel=\"mw:WikiLink\" href=\"/wiki/hello#Interjection\" class=\"mw-selflink-fragment\">Hello</a>!\" or an equivalent greeting.",
+          "parsedExamples": [
+            {
+              "example": "They gave each other a quick <b>hello</b> when they met, and went back on their merry ways."
+            }
+          ],
+          "examples": [
+            "They gave each other a quick <b>hello</b> when they met, and went back on their merry ways."
+          ]
+        }
+      ]
+    },
+    {
+      "partOfSpeech": "Verb",
+      "language": "English",
+      "definitions": [
+        {
+          "definition": "<span class=\"usage-label-sense\" about=\"#mwt168\" typeof=\"mw:Transclusion\"></span> To <a rel=\"mw:WikiLink\" href=\"/wiki/greet\" title=\"greet\">greet</a> (someone) with \"hello\"."
+        }
+      ]
+    }
+  ],
+  "fr": [
+    {
+      "partOfSpeech": "Interjection",
+      "language": "French",
+      "definitions": [
+        {
+          "definition": "<span class=\"usage-label-sense\" about=\"#mwt180\" typeof=\"mw:Transclusion\"></span> <span class=\"Latn\" lang=\"en\" about=\"#mwt181\" typeof=\"mw:Transclusion\"><a rel=\"mw:WikiLink\" href=\"/wiki/hello#English\" class=\"mw-selflink-fragment\">hello</a></span>, <a rel=\"mw:WikiLink\" href=\"/wiki/hi\" title=\"hi\">hi</a>"
+        }
+      ]
+    }
+  ],
+  "ff": [
+    {
+      "partOfSpeech": "Noun",
+      "language": "Fula",
+      "definitions": [
+        {
+          "definition": "a <a rel=\"mw:WikiLink\" href=\"/wiki/page\" title=\"page\">page</a>"
+        },
+        {
+          "definition": "one side of a <a rel=\"mw:WikiLink\" href=\"/wiki/wall\" title=\"wall\">wall</a>, a wall"
+        },
+        {
+          "definition": "a <a rel=\"mw:WikiLink\" href=\"/wiki/slap\" title=\"slap\">slap</a> in the face"
+        }
+      ]
+    }
+  ]
+}

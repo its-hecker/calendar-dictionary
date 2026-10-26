@@ -37,3 +37,10 @@ test('cache keys preserve case-sensitive dictionary words and translation entiti
  assert.equal(data.translation('This isn&#39;t water.','en'),"This isn't water.");
  assert.throws(()=>data.translation('No translation','ur'),/requested language/);
 });
+
+test('backup source is retained and capitalized queries retain their own cache identity',()=>{
+ const payload=fixture('en-hello.json');payload.source.provider='Wiktionary';
+ const result=data.parse(payload,'Hello');
+ assert.equal(result.word,'hello');assert.equal(result.id,'online:en:Hello');assert.equal(result.provider,'Wiktionary');
+ assert.notEqual(result.id,data.key('hello'));
+});

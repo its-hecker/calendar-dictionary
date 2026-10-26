@@ -36,7 +36,7 @@ window.OnlineWords=(()=>{
   const word=text(payload.word,100)||query;
   return {id:key(query),word,kind:lang,ur:lang==='ur'?word:'',roman,ipa,online:true,query,
    pos:senses[0].pos,preview:senses[0].text,senses,synonyms:[...synonyms].slice(0,30),bilingualExamples:[],limited,
-   fetchedAt:Date.now(),sourceUrl:https(source.url)||'https://en.wiktionary.org/wiki/'+encodeURIComponent(word),
+   fetchedAt:Date.now(),provider:source.provider==='Wiktionary'?'Wiktionary':'FreeDictionaryAPI.com',sourceUrl:https(source.url)||'https://en.wiktionary.org/wiki/'+encodeURIComponent(word),
    license:{name:text(source.license?.name,100)||'CC BY-SA 4.0',url:https(source.license?.url)||'https://creativecommons.org/licenses/by-sa/4.0/'}};
  }
  function example(entry){
